@@ -1,4 +1,5 @@
 	lst off
+	exp off
 	xc
 	xc
 	rel
@@ -16,7 +17,7 @@ SETALTCHAR	equ $c00f
 TXTSET		equ $c051
 
 
-	ent init
+	ent init,main
 
 
 	dum 0
@@ -35,6 +36,17 @@ cursor_state dw 0
 
 
 	dend
+
+main
+	clc
+	xce
+	cli
+
+	jsr init
+
+:loop	wai
+	bra :loop
+
 
 init
 	sep #$30

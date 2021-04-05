@@ -1,7 +1,7 @@
 
 * binary link
 	lkv 0
-	org $0800
+	org $6000
 
 	ovr all
 *	if boot.S

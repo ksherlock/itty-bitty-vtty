@@ -2,10 +2,15 @@
 * boot block.
 *
 * loaded at $0800
+* relocates everything to $6000, loads extra blocks, and runs main.
 
 	xc
 	xc
 	rel
+*	org $0800
+
+ORG	equ $6000
+
 
 SLOT	equ $00
 CMD	equ $42
@@ -13,7 +18,7 @@ UNIT	equ $43
 BUFFER	equ $44
 BLOCK	equ $46
 
-	ext init
+	ext main
 boot
 	mx %11
 
@@ -28,9 +33,14 @@ boot
 *	lsr
 *	lsr
 *	ora #$c0
+	ldy #END-boot
+:cp	lda $0800,y ; boot,y
+	sta ORG,y
+	dey
+	bne :cp
+	jmp ORG+:entry-boot
 
-
-	stx UNIT
+:entry	stx UNIT
 	txa
 	lsr
 	lsr
@@ -59,12 +69,12 @@ boot
 	sta :prodos+1
 
 
-	lda #1
+	lda #1 ; read block
 	sta CMD
 	sta BLOCK
 	stz BLOCK+1
 	stz BUFFER
-	lda #$a0 ; $0800+512
+	lda #>{ORG+512} ; $0800+512
 	sta BUFFER+1
 
 :read
@@ -83,18 +93,24 @@ boot
 
 
 :ok
-
-	clc
-	xce
-	cli
-
-	jsr init
+	jmp main
 
 noboot
-:loop	wai
-	bra :loop
+	ldx #0
+:cout	lda :str,x
+	beq :wai
+	jsr $fded
+	inx
+	bra :cout
 
+:wai	wai
+	bra :wai
 
+:str	asc "** BOOT ERROR **",00
 
+END
+	err *-boot>$ff
+* fill to end of block since only 255 bytes relocated.
+	ds boot+512-*
 
 	sav boot.L

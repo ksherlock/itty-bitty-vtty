@@ -17,7 +17,7 @@ SETALTCHAR	equ $c00f
 TXTSET		equ $c051
 
 
-	ent init,main
+	ent init,main,vt52
 
 
 	dum 0
@@ -37,12 +37,28 @@ cursor_state dw 0
 
 	dend
 
+	mx %11
 main
 	clc
 	xce
 	cli
 
 	jsr init
+	mx %00
+loop
+	sep #$30
+	lda $c000
+	bmi :key
+	bra loop
+
+:key
+	lda $c010
+	ldx $c025 ; keymod
+	and #$7f
+	jsr vt52
+	bra loop
+
+
 
 :loop	wai
 	bra :loop
@@ -101,13 +117,13 @@ clear_eol
 	lda #" "
 	bcc :even
 
-	sta [text01],y
+	sta (text00),y
 	iny
 :even
 	cpy #80/2
 	bcs :rts
-	sta (text00),y
 	sta [text01],y
+	sta (text00),y
 	iny
 	cpy #40
 	bra :even
@@ -236,21 +252,21 @@ draw_char
 	; a = char to draw
 	ora #$80
 	tax
-	lda y
+	lda x
 	lsr
 	tay
 	txa
-	bcs :x1
+	bcs :odd
 
 	sep #$20
-	sta (text00),y
+	sta [text01],y
 	rep #$20
 	inc x
 	jmp update_cursor
 
-:x1
+:odd
 	sep #$20
-	sta [text01],y
+	sta (text00),y
 	rep #$20
 	lda x
 	cmp #79
@@ -294,13 +310,17 @@ text
 
 
 vt52
+	mx %11
+	and #$7f
 	cmp #' '
 	bcs :normal
 	asl
 	tax
+	rep #$30
 	jmp (ctrl_table,x)
 :normal
 	ldx state
+	rep #$30
 	jmp (st_table,x)
 
 st_table
@@ -480,7 +500,7 @@ ctrl_0a ; line feed - cursor down w/ scroll
 	jmp scroll_down
 
 :simple
-	iny
+	inc y
 	jmp update_cursor
 
 ctrl_0d ; carriage return - cursor to column 0.
@@ -592,6 +612,13 @@ esc_lt ; vt100 - enter ANSI mode (exit vt52 mode).
 
 
 update_cursor
+* todo - cursor stuff.
+	lda y
+	asl
+	tay
+	lda text,y
+	sta text00
+	sta text01
 	rts
 
 

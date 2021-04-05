@@ -187,7 +187,7 @@ clear_table
 	dw c20,c21,c22,c23
 
 
-scroll_up
+scroll_down
 
 	cp $0480;$0400
 	cp $0500;$0480
@@ -217,7 +217,7 @@ scroll_up
 	cc $07d0
 	rts
 
-scroll_down
+scroll_up
 
 	cp $0750;$07d0
 	cp $06d0;$0750

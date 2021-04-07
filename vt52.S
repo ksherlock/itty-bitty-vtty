@@ -75,6 +75,8 @@ main
 	cli
 
 	jsr init
+	jsr cursor_on
+
 	mx %00
 	lda #0
 loop
@@ -136,6 +138,7 @@ keypress
 	bne :send
 	lda #$08
 :send	jsr vt52
+	jsr cursor_on
 	bra loop
 
 
@@ -172,6 +175,10 @@ init
 	lda #$0001
 	sta text01+2
 	sta cursor_ptr+2
+
+	lda #" "
+	sta cursor_saved_char
+	stz cursor_state
 
 	jmp clear_all
 
@@ -412,6 +419,9 @@ text
 
 vt52
 	mx %11
+	tay ; save
+	jsr cursor_off
+	tya
 
 	and #$7f
 	cmp #' '
@@ -597,6 +607,9 @@ ctrl_0a ; line feed - cursor down w/ scroll
 	lda y
 	cmp #23
 	blt :simple
+
+	lda #" "
+	sta cursor_saved_char
 	jmp scroll_down
 
 :simple
@@ -618,8 +631,7 @@ esc_A ; cursor up w/o scroll
 esc_B ; cursor down w/o scroll
 
 	lda y
-	inc
-	cmp #24
+	cmp #23
 	bcs :rts
 	inc y
 	jmp update_cursor
@@ -628,7 +640,6 @@ esc_B ; cursor down w/o scroll
 esc_C ; cursor right w/o wrap
 
 	lda x
-	inc
 	cmp #79
 	bcs :rts
 	inc x
@@ -664,6 +675,8 @@ esc_I ; reverse line feed - cursor up w/ scroll
 
 	lda y
 	bne :simple
+	lda #" "
+	sta cursor_saved_char
 	jmp scroll_up
 :simple
 	dec y
@@ -712,7 +725,6 @@ esc_lt ; vt100 - enter ANSI mode (exit vt52 mode).
 
 
 update_cursor
-* todo - cursor stuff.
 	mx %11
 	php
 	rep #$30
@@ -724,11 +736,21 @@ update_cursor
 	sta text00
 	sta text01
 	sta cursor_ptr
+
+	lda x
+	and #1
+	eor #1
+	sta cursor_ptr+2
+
 	lda x
 	lsr
 	clc
 	adc cursor_ptr
 	sta cursor_ptr
+
+	lda [cursor_ptr]
+	and #$00ff
+	sta cursor_saved_char
 
 	plp
 	rts
@@ -744,15 +766,7 @@ cursor_off
 	lsr
 	bcc :simple
 
-	lda x
-	lsr
 	lda cursor_saved_char
-
-	bcc :even
-	sta (cursor_ptr)
-	bra :simple
-
-:even
 	sta [cursor_ptr]
 
 :simple
@@ -771,7 +785,10 @@ cursor_on
 	lda cursor_state
 	bpl :rts
 
-	stz cursor_state
+	lda #1
+	sta cursor_state
+	lda #"_"
+	sta [cursor_ptr]
 :rts	plp
 	rts
 

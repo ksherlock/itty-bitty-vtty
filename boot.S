@@ -10,6 +10,7 @@
 *	org $0800
 
 ORG	equ $6000
+MAX_BLOCK equ 6
 
 
 SLOT	equ $00
@@ -85,7 +86,7 @@ boot
 	inc BUFFER+1
 	inc BUFFER+1
 	lda BLOCK
-	cmp #6
+	cmp #MAX_BLOCK+1
 	bcc :read
 	bra :ok
 

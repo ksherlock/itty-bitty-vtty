@@ -9,13 +9,41 @@
 *
 *
 *
+* todo -- beep -- use ensoniq?
+* todo -- vgc int for cursor blink
 *
+*
+* in general, 8-bit m/x.
+*
+*
+*
+
 
 
 SET80VID	equ $c00d
 SETALTCHAR	equ $c00f
 TXTSET		equ $c051
+KEYMOD		equ $c025
+KEYSTROBE	equ $c010
+KBD		equ $c000
+VGCINT		equ $c023
 
+
+kmShift		equ %0000_0001
+kmControl	equ %0000_0010
+kmCapsLock	equ %0000_0100
+kmRepeat	equ %0000_1000
+kmKeypad	equ %0001_0000
+kmUpdateMod	equ %0010_0000
+kmOption	equ %0100_0000
+kmCommand	equ %1000_0000
+
+
+* interrupt vectors.  JMP ABSLONG.
+IRQ1SEC		equ $e10054
+IRQQTR		equ $e10038
+IRQVBL		equ $e10030
+IRQSND		equ $e1002c
 
 	ent init,main,vt52
 
@@ -27,6 +55,9 @@ state	dw 0
 mode	dw 0
 x	dw 0
 y	dw 0
+key	dw 0
+mod	dw 0
+
 
 * cursor 
 
@@ -45,23 +76,78 @@ main
 
 	jsr init
 	mx %00
+	lda #0
 loop
 	sep #$30
-	lda $c000
-	bmi :key
-	bra loop
+:again	lda $c000
+	bmi keypress
+	bra :again
 
-:key
-	lda $c010
-	ldx $c025 ; keymod
+keypress
 	and #$7f
+	sta key
+	sta KEYSTROBE
+	lda KEYMOD  ; %1000_0000
+	sta mod
+	bit #kmOption!kmCommand
+	bne :command
+
+	bit #kmKeypad
+	bne :keypad
+	bit #kmControl
+	bne :ctrl
+
+
+	lda key
+	cmp #' '
+	bcs :notctrl
+
+
+* control char but control not set.
+* need to differentiate arrow keys vs control keys
+*
+* arrow keys depend on mode....
+	ldx #:atsize-2
+]loop	cmp :arrowtable,x
+	beq :remap
+	dex
+	dex
+	bmi :send
+	bra ]loop
+:remap
+	lda :arrowtable+1,x
+	sta key
+	lda #$1b
 	jsr vt52
+	bra :ctrl
+
+:arrowtable
+	db $08,'D' ; left arrow
+	db $0a,'B' ; down arrow
+	db $0b,'A' ; up arrow
+	db $15,'C' ; right arrow
+:atsize equ *-:arrowtable
+
+:ctrl	lda key
+	bra :send
+
+:notctrl
+	cmp #$7f ; delete is a special case.
+	bne :send
+	lda #$08
+:send	jsr vt52
 	bra loop
 
 
+:command
+* or option
+	bra loop
 
-:loop	wai
-	bra :loop
+:keypad
+*
+	bra loop
+
+
 
 
 init
@@ -81,8 +167,11 @@ init
 	stz text00+2
 
 	sta text01
+	sta cursor_ptr
+
 	lda #$0001
 	sta text01+2
+	sta cursor_ptr+2
 
 	jmp clear_all
 
@@ -108,9 +197,11 @@ cp	mac
 	<<<
 
 
-
+* needs to restore mx
 clear_eol
-	sep #$20
+	mx %11
+	php
+	sep #$30
 	lda x
 	lsr
 	tay
@@ -127,13 +218,16 @@ clear_eol
 	iny
 	cpy #40
 	bra :even
-:rts	rep #$20
+:rts	plp
 	rts
 
+* needs to restore mx
 clear_eos
+	mx %11
+	ldx #0 ; for jmp (,x)
 	lda x
 	ora y
-	beq clear_all
+	beq :all
 
 	lda x
 	beq :x0
@@ -147,12 +241,17 @@ clear_eos
 	bcs :rts
 	asl
 	tax
+:all	php ; clear_table will plp.
+	rep #$30
 	lda #"  "
 	jmp (clear_table,x)
 
 :rts	rts
 
 clear_all
+	mx %00
+	php
+	rep #$30
 	lda #"  " ; high bit
 c00	cc $0400
 c01	cc $0480
@@ -178,7 +277,7 @@ c20	cc $0650
 c21	cc $06d0
 c22	cc $0750
 c23	cc $07d0
-
+	plp
 	rts
 
 clear_table
@@ -188,7 +287,10 @@ clear_table
 
 
 scroll_down
+	mx %11
 
+	php
+	rep #$30
 	cp $0480;$0400
 	cp $0500;$0480
 	cp $0580;$0500
@@ -215,10 +317,12 @@ scroll_down
 
 	lda #"  "
 	cc $07d0
+	plp
 	rts
 
 scroll_up
-
+	php
+	rep #$30
 	cp $0750;$07d0
 	cp $06d0;$0750
 	cp $0650;$06d0
@@ -245,10 +349,11 @@ scroll_up
 
 	lda #"  "
 	cc $0400
+	plp
 	rts
 
-
 draw_char
+	mx %11
 	; a = char to draw
 	ora #$80
 	tax
@@ -258,16 +363,12 @@ draw_char
 	txa
 	bcs :odd
 
-	sep #$20
 	sta [text01],y
-	rep #$20
 	inc x
 	jmp update_cursor
 
 :odd
-	sep #$20
 	sta (text00),y
-	rep #$20
 	lda x
 	cmp #79
 	bcs :rts
@@ -311,16 +412,15 @@ text
 
 vt52
 	mx %11
+
 	and #$7f
 	cmp #' '
 	bcs :normal
 	asl
 	tax
-	rep #$30
 	jmp (ctrl_table,x)
 :normal
 	ldx state
-	rep #$30
 	jmp (st_table,x)
 
 st_table
@@ -613,13 +713,108 @@ esc_lt ; vt100 - enter ANSI mode (exit vt52 mode).
 
 update_cursor
 * todo - cursor stuff.
+	mx %11
+	php
+	rep #$30
+
 	lda y
 	asl
 	tay
 	lda text,y
 	sta text00
 	sta text01
+	sta cursor_ptr
+	lda x
+	lsr
+	clc
+	adc cursor_ptr
+	sta cursor_ptr
+
+	plp
 	rts
+
+cursor_off
+	mx %11
+	php
+	sei
+*	sep #$20+4
+	lda cursor_state
+	bmi :rts
+
+	lsr
+	bcc :simple
+
+	lda x
+	lsr
+	lda cursor_saved_char
+
+	bcc :even
+	sta (cursor_ptr)
+	bra :simple
+
+:even
+	sta [cursor_ptr]
+
+:simple
+	lda #$80
+	sta cursor_state
+
+:rts	plp
+	rts
+
+
+cursor_on
+	mx %11
+	php
+	sei
+*	sep #$20+4
+	lda cursor_state
+	bpl :rts
+
+	stz cursor_state
+:rts	plp
+	rts
+
+cursor_int
+* cursor interrupt - swap the char w/
+	mx %11
+	php
+
+	lda cursor_state
+	bmi :rts
+	eor #1
+	sta cursor_state
+	lsr
+	bcc :off
+:on
+	lda x
+	lsr
+	bcc :even_on
+	lda (cursor_ptr)
+	sta cursor_saved_char
+	lda #'_'
+	sta (cursor_ptr)
+	bra :rts
+:even_on
+	lda [cursor_ptr]
+	sta cursor_saved_char
+	lda #'_'
+	sta [cursor_ptr]
+	bra :rts
+
+:off
+	lda x
+	lsr
+	lda cursor_saved_char
+	bcc :even_off
+	sta (cursor_ptr)
+	bra :rts
+:even_off
+	sta [cursor_ptr]
+
+:rts	plp
+	clc
+	rtl
 
 
 *	lst on

@@ -4,6 +4,9 @@
 	xc
 	rel
 
+
+START	equ *
+
 * vt52 emulator.
 * not supported - graphics, screen hold.
 *
@@ -833,6 +836,10 @@ cursor_int
 	clc
 	rtl
 
+
+END	equ *
+MAXBLOCKS	equ END-START+511/512+2
+	ent MAXBLOCKS
 
 *	lst on
 *	sym on

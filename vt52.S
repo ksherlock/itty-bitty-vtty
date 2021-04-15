@@ -32,6 +32,12 @@ KBD		equ $c000
 VGCINT		equ $c023
 
 
+SCCBREG		equ $c038
+SCCAREG		equ $c039
+SCCBDATA	equ $c03a
+SCCADATA	equ $c03b
+
+
 kmShift		equ %0000_0001
 kmControl	equ %0000_0010
 kmCapsLock	equ %0000_0100
@@ -40,6 +46,14 @@ kmKeypad	equ %0001_0000
 kmUpdateMod	equ %0010_0000
 kmOption	equ %0100_0000
 kmCommand	equ %1000_0000
+
+
+* modes
+mAltKeyPad	equ %0000_0001
+mGraphics	equ %0000_0010
+mHoldScreen	equ %0000_0100
+mLocal		equ %1000_0000
+
 
 
 * interrupt vectors.  JMP ABSLONG.
@@ -80,8 +94,6 @@ main
 	jsr init
 	jsr cursor_on
 
-	mx %00
-	lda #0
 loop
 	sep #$30
 :again	lda $c000
@@ -183,7 +195,167 @@ init
 	sta cursor_saved_char
 	stz cursor_state
 
-	jmp clear_all
+	jsr clear_all
+	lda #0 ; clear high byte.
+	; drop through
+
+init_modem
+	sep #$30
+* reset channel B (modem port)
+	ldx #9
+	lda #%01010001
+	stx SCCBREG
+	sta SCCBREG
+	nop
+	nop
+
+* x16 clock mode, 1 stop bit, no parity	
+	ldx #4
+	lda #%01000100
+	stx SCCBREG
+	sta SCCBREG
+
+* 8 bits/char, rx disabled.
+	ldx #3
+	lda #%11000000
+	stx SCCBREG
+	sta SCCBREG
+
+* 8 data bits, RTS
+	ldx #5
+	lda #%01100010
+	stx SCCBREG
+	sta SCCBREG
+
+	ldx #11
+	lda #%01010000
+	stx SCCBREG
+	sta SCCBREG
+
+* 9600 baud
+	ldx #12
+	lda #10
+	stx SCCBREG
+	sta SCCBREG
+
+* 9600 baud
+	ldx #13
+	lda #0
+	stx SCCBREG
+	sta SCCBREG
+
+
+* disable baud rate generator
+	ldx #14
+	lda #0
+	stx SCCBREG
+	sta SCCBREG
+
+* enable baud rate generator
+	ldx #14
+	lda #%00000001
+	stx SCCBREG
+	sta SCCBREG
+
+
+
+* 8 bits/char, rx enabled.
+	ldx #3
+	lda #%11000001
+	stx SCCBREG
+	sta SCCBREG
+
+
+* 8 data bits, tx enabled, RTS
+	ldx #5
+	lda #%01101010
+	stx SCCBREG
+	sta SCCBREG
+
+* disable interrupts
+	ldx #15
+	lda #0
+	stx SCCBREG
+	sta SCCBREG
+
+* reset ext/status interrupts
+	ldx #0
+	lda #%00010000
+	stx SCCBREG
+	sta SCCBREG
+
+* disable interrupts
+	ldx #1
+	lda #0
+	stx SCCBREG
+	sta SCCBREG
+
+* reset ch b ptr to 0?
+	lda SCCBREG
+
+
+* status, visible, master interrupts disabled
+	ldx #9
+	lda #%00010001
+	stx SCCBREG
+	sta SCCBREG
+	nop
+	nop
+
+
+	rts
+
+
+write_modem
+	mx %11
+* a: byte to send
+	tay ; save
+*	ldx #0
+
+:mask	= %0010_0100  ; tx buffer empty, clear to send
+:wait	stz SCCBREG
+	lda SCCBREG
+	and #:mask
+	cmp #:mask
+	bne :wait
+
+	sty SCCBDATA
+	rts
+
+read_modem
+* c set if data read
+* v set if overrun
+	mx %11
+*	ldx #0
+	rep #$61 ; C + V
+	stz SCCBREG
+	lda SCCBREG
+	and #%0001
+	beq :rts
+
+* read reg 1 for overrun 
+	lda #1
+	sta SCCBREG
+	lda SCCBREG
+	and #%0010_0000
+	beq :ok
+* clear the overrun
+	lda #$30 ; reg0, error reset.
+	sta SCCBREG
+	stz SCCBREG
+	sep #$60 ; V
+:ok
+*	lda #8
+*	sta SCCBREG
+*	lda SCCBREG
+	lda SCCBDATA
+	sec
+:rts	rts
+
+
+
+
+
 
 
 cc	mac
@@ -259,7 +431,7 @@ clear_eos
 :rts	rts
 
 clear_all
-	mx %00
+	mx %11
 	php
 	rep #$30
 	lda #"  " ; high bit
@@ -700,24 +872,31 @@ esc_Y ; direct cursor addressing
 
 esc_Z ; identify terminal.
 	; return ESC / K
+	bit mode
+	bmi :local
+* todo...
 	rts
 
+:local
+	lda #'K'
+	jmp draw_char
+
 esc_[ ; enter hold screen mode
-	lda #%0100
+	lda #mHoldScreen
 	tsb mode
 	rts
 
 esc_\ ; exit hold screen mode
-	lda #%0100
+	lda #mHoldScreen
 	trb mode
 	rts
 
 esc_eq ; enter alternate keypad mode
-	lda #%0001
+	lda #mAltKeyPad
 	tsb mode
 	rts
 esc_gt ; exit alternate keypad mode
-	lda #%0001
+	lda #mAltKeyPad
 	trb mode
 	rts
 

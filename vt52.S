@@ -95,12 +95,28 @@ main
 	jsr cursor_on
 
 loop
-	sep #$30
-:again	lda $c000
-	bmi keypress
-	bra :again
+*	sep #$30
+
+	jsr keypress
+	bit mode ; local ?
+	bmi loop
+	pea loop-1
+	jmp modem
+
+
+modem
+	jsr read_modem
+	bcc :rts
+	jmp vt52
+:rts	rts
+
 
 keypress
+	mx %11
+	lda $c000
+	bmi :key
+	rts
+:key
 	and #$7f
 	sta key
 	sta KEYSTROBE
@@ -110,7 +126,7 @@ keypress
 	bne :command
 
 	bit #kmKeypad
-	bne :keypad
+	bne keypad
 	bit #kmControl
 	bne :ctrl
 
@@ -135,7 +151,7 @@ keypress
 	lda :arrowtable+1,x
 	sta key
 	lda #$1b
-	jsr vt52
+	jsr dispatch
 	bra :ctrl
 
 :arrowtable
@@ -152,19 +168,51 @@ keypress
 	cmp #$7f ; delete is a special case.
 	bne :send
 	lda #$08
-:send	jsr vt52
+:send	jsr dispatch
 	jsr cursor_on
-	bra loop
+	rts
 
 
 :command
 * or option
-	bra loop
+	rts
 
-:keypad
-*
-	bra loop
+keypad
+* 0-9, Enter, . PF1-3 are the only valid keypad keys
 
+	lda mode
+	bit #mAltKeyPad
+	beq :normal
+	lda key
+	cmp #'0'
+	bcc :notnum
+	cmp #'9'+1
+	bcs :notnum
+:qq
+* 0-9 sends ESC ? p-y which is num | 0x40
+	lda #$1b
+	jsr dispatch
+	lda #'?'
+	jsr dispatch
+	lda key
+	ora #$40
+	jmp dispatch
+:notnum
+	cmp #$0d
+	beq :qq
+	cmp #'.'
+	beq :qq
+
+
+
+:normal
+* todo - PF1/2/3 should send ESC P/Q/R
+	lda key
+	jmp dispatch
+
+:table	db $1b,'P'
+	db '=','Q'
+	db '/','R'
 
 
 
@@ -306,6 +354,13 @@ init_modem
 	rts
 
 
+dispatch
+	bit mode
+	bpl :modem
+	jmp vt52
+:modem
+
+
 write_modem
 	mx %11
 * a: byte to send
@@ -322,12 +377,14 @@ write_modem
 	sty SCCBDATA
 	rts
 
+
+
 read_modem
 * c set if data read
 * v set if overrun
 	mx %11
 *	ldx #0
-	rep #$61 ; C + V
+	rep #$41 ; clear C + V
 	stz SCCBREG
 	lda SCCBREG
 	and #%0001
@@ -343,7 +400,7 @@ read_modem
 	lda #$30 ; reg0, error reset.
 	sta SCCBREG
 	stz SCCBREG
-	sep #$60 ; V
+	sep #$40 ; V
 :ok
 *	lda #8
 *	sta SCCBREG
@@ -874,8 +931,12 @@ esc_Z ; identify terminal.
 	; return ESC / K
 	bit mode
 	bmi :local
-* todo...
-	rts
+	lda #$1b
+	jsr write_modem
+	lda #'/'
+	jsr write_modem
+	lda #'K'
+	jmp write_modem
 
 :local
 	lda #'K'

@@ -30,6 +30,7 @@ KEYMOD		equ $c025
 KEYSTROBE	equ $c010
 KBD		equ $c000
 VGCINT		equ $c023
+SCANINT		equ $c032
 
 
 SCCBREG		equ $c038
@@ -78,9 +79,10 @@ mod	dw 0
 
 * cursor 
 
-cursor_ptr adrl 0
-cursor_saved_char dw 0
-cursor_state dw 0
+cursor_ptr	adrl 0
+cursor_saved_char	dw 0
+cursor_state	dw 0
+cursor_char	dw 0
 
 
 	dend
@@ -94,15 +96,22 @@ main
 	jsr init
 	jsr cursor_on
 
+
+	lda #4
+	tsb VGCINT ; enable 1-sec interrupt.
+	stz SCANINT ; reset 1-sec interrupt
+
 loop
 *	sep #$30
+	bit cursor_state
+	bpl :k
+	jsr cursor_on
 
-	jsr keypress
+:k	jsr keypress
 	bit mode ; local ?
 	bmi loop
-	pea loop-1
-	jmp modem
-
+	jsr modem
+	bra loop
 
 modem
 	jsr read_modem
@@ -239,11 +248,27 @@ init
 	sta text01+2
 	sta cursor_ptr+2
 
+	lda #"_"
+	sta cursor_char
 	lda #" "
 	sta cursor_saved_char
 	stz cursor_state
 
+
+
 	jsr clear_all
+
+
+	lda #$0080
+	sta cursor_state
+	sei
+	lda cursor_vector
+	stal IRQ1SEC
+	lda cursor_vector+2
+	stal IRQ1SEC+2
+	cli
+
+
 	lda #0 ; clear high byte.
 	; drop through
 
@@ -917,10 +942,12 @@ esc_I ; reverse line feed - cursor up w/ scroll
 
 
 esc_J ; erase to end of screen
-	jmp clear_eos
+	jsr clear_eos
+	jmp update_cursor
 
 esc_K ; erase to end-of-line
-	jmp clear_eol
+	jsr clear_eol
+	jmp update_cursor
 
 esc_Y ; direct cursor addressing
 	lda #4
@@ -970,6 +997,7 @@ esc_lt ; vt100 - enter ANSI mode (exit vt52 mode).
 update_cursor
 	mx %11
 	php
+	sei
 	rep #$30
 
 	lda y
@@ -1030,15 +1058,16 @@ cursor_on
 
 	lda #1
 	sta cursor_state
-	lda #"_"
+	lda cursor_char
 	sta [cursor_ptr]
 :rts	plp
 	rts
 
+cursor_vector	jml cursor_int
 cursor_int
-* cursor interrupt - swap the char w/
+* cursor interrupt - blink the cursor.
+
 	mx %11
-	php
 
 	lda cursor_state
 	bmi :rts
@@ -1047,32 +1076,17 @@ cursor_int
 	lsr
 	bcc :off
 :on
-	lda x
-	lsr
-	bcc :even_on
-	lda (cursor_ptr)
-	sta cursor_saved_char
-	lda #'_'
-	sta (cursor_ptr)
-	bra :rts
-:even_on
 	lda [cursor_ptr]
 	sta cursor_saved_char
-	lda #'_'
+	lda cursor_char
 	sta [cursor_ptr]
 	bra :rts
 
 :off
-	lda x
-	lsr
 	lda cursor_saved_char
-	bcc :even_off
-	sta (cursor_ptr)
-	bra :rts
-:even_off
 	sta [cursor_ptr]
 
-:rts	plp
+:rts	stz SCANINT ; reset 1-sec interrupt
 	clc
 	rtl
 

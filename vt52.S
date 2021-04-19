@@ -21,6 +21,7 @@ START	equ *
 *
 *
 
+ESC		equ $1b
 
 
 SET80VID	equ $c00d
@@ -159,7 +160,7 @@ keypress
 :remap
 	lda :arrowtable+1,x
 	sta key
-	lda #$1b
+	lda #ESC
 	jsr dispatch
 	bra :ctrl
 
@@ -187,41 +188,104 @@ keypress
 	rts
 
 keypad
-* 0-9, Enter, . PF1-3 are the only valid keypad keys
-
-	lda mode
-	bit #mAltKeyPad
-	beq :normal
 	lda key
-	cmp #'0'
-	bcc :notnum
-	cmp #'9'+1
-	bcs :notnum
-:qq
-* 0-9 sends ESC ? p-y which is num | 0x40
-	lda #$1b
-	jsr dispatch
-	lda #'?'
-	jsr dispatch
-	lda key
-	ora #$40
-	jmp dispatch
-:notnum
-	cmp #$0d
-	beq :qq
-	cmp #'.'
-	beq :qq
-
-
+	cmp #:MIN
+	bcc :rts
+	cmp #:MAX+1
+	bcc :ok
+:rts	rts
+:ok
+	tay ; save
+	sec
+	sbc #:MIN
+	tax
+	lda :table,x
+	beq :rts ; dead
+	bmi :normal
+:pf
+	bit mode ; don't bother in local mode
+	bmi :rts
+	pha ; save
+	lda #ESC
+	jsr write_modem
+	pla ; restore
+	jmp write_modem
 
 :normal
-* todo - PF1/2/3 should send ESC P/Q/R
-	lda key
+	; y still has key value
+	lda mode
+	and #mAltKeyPad
+	bne :alt
+	tya
+	jmp dispatch
+:alt
+	phy ; save
+	bit mode
+	bmi :local
+	lda #ESC
+	jsr write_modem
+	lda #'?'
+	jsr write_modem
+:local
+	pla
+	ora #$40
 	jmp dispatch
 
-:table	db $1b,'P'
-	db '=','Q'
-	db '/','R'
+:MIN	equ 13
+:MAX	equ 61
+
+
+; 0x80 = ESC ? c + $40 in alt mode 
+:table
+	db $80	; ^M Enter -> \r, ESC ? M
+	db $0	; ^N
+	db $0	; ^O
+	db $0	; ^P
+	db $0	; ^Q
+	db $0	; ^R
+	db $0	; ^S
+	db $0	; ^T
+	db $0	; ^U
+	db $0	; ^V
+	db $0	; ^W
+	db $0	; ^X
+	db $0	; ^Y
+	db $0	; ^Z
+	db 'P'	; ^[ PF1 -> ESC P
+	db $0	; ^\
+	db $0	; ^]
+	db $0	; ^^
+	db $0	; ^_
+	db $0	;  
+	db $0	; !
+	db $0	; "
+	db $0	; #
+	db $0	; $
+	db $0	; %
+	db $0	; &
+	db $0	; '
+	db $0	; (
+	db $0	; )
+	db $0	; *
+	db $0	; +
+	db $0	; ,
+	db $0	; -
+	db $80	; .
+	db 'R'	; / PF3 -> ESC R
+	db $80	; 0
+	db $80	; 1
+	db $80	; 2
+	db $80	; 3
+	db $80	; 4
+	db $80	; 5
+	db $80	; 6
+	db $80	; 7
+	db $80	; 8
+	db $80	; 9
+	db $0	; :
+	db $0	; ;
+	db $0	; <
+	db 'Q'	; = PF2 -> ESC Q
 
 
 
@@ -480,7 +544,6 @@ clear_eol
 	sta [text01],y
 	sta (text00),y
 	iny
-	cpy #40
 	bra :even
 :rts	plp
 	rts
@@ -958,7 +1021,7 @@ esc_Z ; identify terminal.
 	; return ESC / K
 	bit mode
 	bmi :local
-	lda #$1b
+	lda #ESC
 	jsr write_modem
 	lda #'/'
 	jsr write_modem

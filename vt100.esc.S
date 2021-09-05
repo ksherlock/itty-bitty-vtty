@@ -1,5 +1,5 @@
 
-
+	lst off
 	rel
 	xc
 	xc
@@ -160,5 +160,77 @@ vt100_esc_bad ent
 :rts
 	rts
 
+
+
+vt100_esc_pound ent
+
+* esc # 3 - make line double height (top half)
+* esc # 4 - make line double height (bottom half)
+* esc # 5 - make line single width, single height
+* esc # 6 - make line double width
+
+* esc # 8 - screen alignment - fill screen with E (SGR not honored)
+* based on testing, this also resets the scrolling region and homes the cursor.
+
+* based on testing, 0+ are term characters, 0x20-0x2f puts it in esc_bad state
+
+	ldx #st_vt100
+	sta state
+
+	cmp #:MIN ; must be 0.
+	blt :bad
+	cmp #:MAX+1
+	bge :rts
+	asl
+	tax
+	jmp (:table,x)
+
+:bad	ldx #st_vt100_esc_bad
+	sta state
+:rts	rts
+
+:MIN	equ 48
+:MAX	equ 57
+
+:table
+	dw :rts	; 0
+	dw :rts	; 1
+	dw :rts	; 2
+	dw :rts	; 3
+	dw :rts	; 4
+	dw :rts	; 5
+	dw :rts	; 6
+	dw :rts	; 7
+	dw :e	; 8
+	dw :rts	; 9
+
+:e	rts
+
+
+vt100_esc_lparen ent
+vt100_esc_rparen ent
+
+* ( sets G0, ) sets G1
+* A - UK set
+* B - ASCII set
+* 0 - Special Graphics
+* 1 - Alternate Char ROM Standard Char Set
+* 2 - Alternate Char ROM Special Graphics 
+
+* SO, aka Control-N aka 0x0e set the G1 char set 
+* SI, aka Control-O aka 0x0f set the G0 char set
+
+* not currently supported.
+
+	ldx #st_vt100
+	sta state
+
+	cmp #'0'
+	blt :bad
+	rts
+
+:bad	ldx #st_vt100_esc_bad
+	sta state
+:rts	rts
 
 	sav vt100.esc.L

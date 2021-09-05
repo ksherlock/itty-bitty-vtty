@@ -475,10 +475,95 @@ csi_D
 
 csi_f
 csi_H ; direct cursor addressing
-	rts
+* honors origin
+* large numbers are clamped
+* 0 or 1 treated as 1 (1-based counting)
+
+* based on testing, esc [ 253-255 H will position outside the scrolling
+* region when DECOM is active (to first 3 lines, respectively)
+* this is not emulated.
+
+* y
+	lda parms
+	beq :yy
+	dec
+:yy	bit DECOM
+	bmi :org
+	cmp #23
+	blt :yyy
+	lda #23
+:yyy	sta y
+	bra :x	
+
+
+:org
+	clc
+	adc DECTM
+	cmp DECBM
+	blt :org1
+	lda DECBM
+:org1	sta y
+
+* x
+:x
+	ldx parms+1
+	beq :xx
+	dex
+:xx
+	cpx #79
+	blt :xxx
+	ldx #79
+:xxx	stx x
+
+	jmp update_cursor
 
 csi_r ; scrolling region
-	rts
+* based on testing
+* esc [ n r (no second parmeter) is equivalent to esc [ n ; 24 r
+* esc [ r sets scrolling region to 1 ; 24 ( in accordince with above )
+* 24 is assumed value for second parameter
+* invalid parameters exit without updating 
+
+	lda parms
+	beq :p1
+	dec parms
+:p1
+
+	lda parms+1
+	beq :p2
+	dec parms+1
+	bra :check
+
+:p2	lda #23
+	sta parms+1
+
+:check
+* 23 max
+	ldx parms+0
+	cmp #23+1
+	bge :rts
+
+	ldx parms+1
+	cmp #23+1
+	bge :rts
+
+
+* must be at least 1 line
+	lda parms+1
+	sec
+	sbc parms
+	beq :rts
+	bmi :rts
+
+	lda parms
+	sta DECTM
+	sta y
+	lda parms+1
+	sta DECBM
+	stz x
+	jmp update_cursor
+
+:rts	rts
 
 csi_J ; erase
 	rts

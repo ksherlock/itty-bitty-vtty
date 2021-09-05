@@ -57,4 +57,10 @@ pmod	ds	2
 
 r0	ds	2
 
+* saved character for cursor 
+cursor_saved_char ds 2
+
+	do *>256
+	err "too big"
+	fin
 	dend

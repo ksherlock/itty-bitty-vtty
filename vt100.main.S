@@ -1,3 +1,14 @@
+
+	lst off
+	cas se
+	rel
+	xc
+	xc
+
+	use vt.equ
+
+	ext update_cursor,scroll_down
+
 vt100
 	mx %11
 	and #$7f
@@ -16,6 +27,8 @@ vt100
 	ext vt52_esc,vt52_dca_1,vt52_dca_2
 	ext vt100_esc,vt100_csi,vt100_csi_2
 	ext vt100_esc_pound,vt100_esc_lparen,vt100_esc_rparen
+	ext vt100_esc_bad,vt100_csi_bad
+	ext char
 
 	dw char
 	dw vt52_esc
@@ -28,6 +41,8 @@ vt100
 	dw vt100_esc_pound
 	dw vt100_esc_lparen
 	dw vt100_esc_rparen
+	dw vt100_esc_bad
+	dw vt100_csi_bad
 
 
 :ctrl_table
@@ -100,24 +115,20 @@ ctrl_1a
 	sta state
 	rts
 
+ctrl_08 ; back space
+	ldx x
+	beq :rts
+	dec x
+	jmp update_cursor
+:rts
 
 ctrl_09 ; tab
 * vt100 has adjustable tabs.
-	ext tab_table
-
+	ext next_tab_stop
 	ldx x
-lp:
-	cpx #79
-	bcs :rts
-	lda tab_table,x
-	bne :hit
-	inx
-	bra :lp
-
+	jsr next_tab_stop
 	stx x
-
 	jmp update_cursor
-:rts	rts
 
 ctrl_0a ; line feed - cursor down w/ scroll
 ctrl_0b ; vertical tab
@@ -145,3 +156,6 @@ ctrl_0c ; form feed.
 ctrl_0d ; carriage return - cursor to column 0.
 	stz x
 	jmp update_cursor
+
+
+	sav vt100.main.L

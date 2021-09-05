@@ -1,4 +1,12 @@
 
+	lst off
+	cas se
+	rel
+	xc
+	xc
+
+	use vt.equ
+
 
 *control chars
 	ext draw_char,update_cursor
@@ -86,6 +94,11 @@ ff
 cr
 	stz x
 	jmp update_cursor
+
+
+so ; G1 character set
+si ; G0 character set
+	rts
 
 xon
 xoff

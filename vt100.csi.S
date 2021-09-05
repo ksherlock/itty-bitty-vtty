@@ -1,5 +1,7 @@
 
 
+	lst off
+	cas se
 
 	rel
 	xc
@@ -7,33 +9,9 @@
 
 	use vt.equ
 
+	ext update_cursor,reset_tab,reset_all_tabs
 
 vt100_csi ent
-	inc state
-	inc state
-
-	stz pcount
-	stz parms
-	stz parms+1 ; some assume 2 parms.
-	stz pmod
-
-	tay ; save for modifier
-	cmp #:MIN
-	blt :bad
-	cmp #:MAX+1
-	bge :bad
-	sec
-	sbc #:MIN
-	asl
-	tax
-	jmp (:table,x)
-:bad
-	ldx #st_vt100
-	stx state
-:rts	rts
-
-:table
-
 * 0123456789;ycnlhgrqJKmABCDHf
 
 * based on testing - 
@@ -44,6 +22,34 @@ vt100_csi ent
 * will cancel the sequence AFTER it's finished.
 * < = > ? are allowed as an initial modifier but only '?' is private
 * a mis-placed < = > ? will prevent 0x20-0x2f from terminating the sequence.
+
+
+	inc state
+	inc state
+
+	stz pcount
+	stz parms
+	stz parms+1 ; some assume 2 parms.
+	stz pmod
+
+*	tay ; save for modifier
+	cmp #:MIN
+	blt :end
+	cmp #:MAX+1
+	bge :end
+	sec
+	sbc #:MIN
+	asl
+	tax
+	jmp (:table,x)
+
+* 
+:end
+	ldx #st_vt100
+	stx state
+:rts	rts
+
+
 
 :MIN	equ 48
 :MAX	equ 121
@@ -60,68 +66,68 @@ vt100_csi ent
 	dw :digit	; 9
 	dw digit	; :
 	dw semi
-	dw :rts	; <
-	dw :rts	; =
-	dw :rts	; >
+	dw :rts		; <
+	dw :rts		; =
+	dw :rts		; >
 	dw :modifier	; ?
-	dw $0	; @
-	dw $0	; A
-	dw $0	; B
-	dw $0	; C
-	dw $0	; D
-	dw $0	; E
-	dw $0	; F
-	dw $0	; G
-	dw $0	; H
-	dw $0	; I
-	dw $0	; J
-	dw $0	; K
-	dw $0	; L
-	dw $0	; M
-	dw $0	; N
-	dw $0	; O
-	dw $0	; P
-	dw $0	; Q
-	dw $0	; R
-	dw $0	; S
-	dw $0	; T
-	dw $0	; U
-	dw $0	; V
-	dw $0	; W
-	dw $0	; X
-	dw $0	; Y
-	dw $0	; Z
-	dw $0	; [
-	dw $0	; \
-	dw $0	; ]
-	dw $0	; ^
-	dw $0	; _
-	dw $0	; `
-	dw $0	; a
-	dw $0	; b
-	dw $0	; c
-	dw $0	; d
-	dw $0	; e
-	dw $0	; f
-	dw $0	; g
-	dw $0	; h
-	dw $0	; i
-	dw $0	; j
-	dw $0	; k
-	dw $0	; l
-	dw $0	; m
-	dw $0	; n
-	dw $0	; o
-	dw $0	; p
-	dw $0	; q
-	dw $0	; r
-	dw $0	; s
-	dw $0	; t
-	dw $0	; u
-	dw $0	; v
-	dw $0	; w
-	dw $0	; x
-	dw $0	; y
+	dw :end		; @
+	dw csi_A	; A
+	dw csi_B	; B
+	dw csi_C	; C
+	dw csi_D	; D
+	dw :end		; E
+	dw :end		; F
+	dw :end		; G
+	dw csi_H	; H
+	dw :end		; I
+	dw csi_J	; J
+	dw csi_K	; K
+	dw :end		; L
+	dw :end		; M
+	dw :end		; N
+	dw :end		; O
+	dw :end		; P
+	dw :end		; Q
+	dw :end		; R
+	dw :end		; S
+	dw :end		; T
+	dw :end		; U
+	dw :end		; V
+	dw :end		; W
+	dw :end		; X
+	dw :end		; Y
+	dw :end		; Z
+	dw :end		; [
+	dw :end		; \
+	dw :end		; ]
+	dw :end		; ^
+	dw :end		; _
+	dw :end		; `
+	dw :end		; a
+	dw :end		; b
+	dw csi_c	; c
+	dw :end		; d
+	dw :end		; e
+	dw csi_f	; f
+	dw csi_g	; g
+	dw csi_h	; h
+	dw :end		; i
+	dw :end		; j
+	dw :end		; k
+	dw csi_l	; l
+	dw csi_m	; m
+	dw csi_n	; n
+	dw :end		; o
+	dw :end		; p
+	dw csi_q	; q
+	dw csi_r	; r
+	dw :end		; s
+	dw :end		; t
+	dw :end		; u
+	dw :end		; v
+	dw :end		; w
+	dw :end		; x
+	dw csi_y	; y
 
 
 :digit
@@ -129,25 +135,26 @@ vt100_csi ent
 	sta parms
 	rts
 :modifier
-	ldx #$40 ; bit -> v
-	stx pmod
+	lda #$80
+	sta pmod
 	rts
+
+
+vt100_csi_bad ent
+	cmp #'@'
+	blt :rts
+	ldx #st_vt100
+	stx state
+:rts	rts
+
 
 
 vt100_csi_2 ent
 
-	; if < '0' and invalid modifier, don't terminate.
-	bit pmod
-	bmi :badmod
-	cmp #'@'
-	blt :0
-	ldx #st_vt100
-	stx state
-
-:0	cmp #:MIN
-	blt :bad
+	cmp #:MIN
+	blt :end
 	cmp #:MAX+1
-	bge :bad
+	bge :end
 	sec
 	sbc #:MIN
 	jmp (:table,x)
@@ -156,7 +163,7 @@ vt100_csi_2 ent
 	cmp #'@'
 	blt :rts
 
-:bad
+:end
 	ldx #st_vt100
 	stx state
 :rts	rts
@@ -180,20 +187,78 @@ vt100_csi_2 ent
 	dw :modifier	; =
 	dw :modifier	; >
 	dw :modifier	; ?
+	dw :end		; @
+	dw csi_A	; A
+	dw csi_B	; B
+	dw csi_C	; C
+	dw csi_D	; D
+	dw :end		; E
+	dw :end		; F
+	dw :end		; G
+	dw csi_H	; H
+	dw :end		; I
+	dw csi_J	; J
+	dw csi_K	; K
+	dw :end		; L
+	dw :end		; M
+	dw :end		; N
+	dw :end		; O
+	dw :end		; P
+	dw :end		; Q
+	dw :end		; R
+	dw :end		; S
+	dw :end		; T
+	dw :end		; U
+	dw :end		; V
+	dw :end		; W
+	dw :end		; X
+	dw :end		; Y
+	dw :end		; Z
+	dw :end		; [
+	dw :end		; \
+	dw :end		; ]
+	dw :end		; ^
+	dw :end		; _
+	dw :end		; `
+	dw :end		; a
+	dw :end		; b
+	dw csi_c	; c
+	dw :end		; d
+	dw :end		; e
+	dw csi_f	; f
+	dw csi_g	; g
+	dw csi_h	; h
+	dw :end		; i
+	dw :end		; j
+	dw :end		; k
+	dw csi_l	; l
+	dw csi_m	; m
+	dw csi_n	; n
+	dw :end		; o
+	dw :end		; p
+	dw csi_q	; q
+	dw csi_r	; r
+	dw :end		; s
+	dw :end		; t
+	dw :end		; u
+	dw :end		; v
+	dw :end		; w
+	dw :end		; x
+	dw csi_y	; y
 
 :modifier
-	lda #$80
-	sta pmod
+	ldx #st_vt100_csi_bad
+	stx state
 	rts
 
 semi
 	ldx pcount
 	cpx #MAX_PCOUNT
-	bge :rts
+	bge :big
 
 	inx
 	stx pcount
-	stz parms,x
+:big	stz parms,x
 :rts	rts
 
 * parameter digit.  clamped to 255 (250+ rounds up to 255)
@@ -209,9 +274,9 @@ digit
 	bge :v
 
 	tay
-	lda :table,y
+	lda :mult,y
 *	clc ; cleared via cmp
-	adc r1
+	adc r0
 	sta parms,x
 
 
@@ -222,21 +287,19 @@ digit
 	sta parms,x
 	rts
 
-:table	da 0,10,20,30,40,50,60,70,80,90
+:mult	da 0,10,20,30,40,50,60,70,80,90
 	da 100,110,120,130,140,150,160,170,180,190
 	da 200,210,220,230,240,250
 
 
 
-
-
-set_mode
+csi_h
 	; esc [ ... h (vt100)
 	; esc [ ? ... h (private)
 	ldy #$80
 	bra mode_common
 
-reset_mode
+csi_l
 	; esc [ ... l (vt100)
 	; esc [ ? ... l (private)
 	ldy #0
@@ -248,7 +311,7 @@ mode_common
 	cmp #:MIN
 	blt :next
 	cmp #:MAX+1
-	bgt :next
+	bge :next
 	phx
 	asl
 	tax
@@ -290,14 +353,14 @@ mode_common
 
 mode_DECCKM
 	bit pmod
-	bvc :rts
+	bpl :rts
 
 	sty DECCKM
 :rts	rts
 
 mode_DECANM
 	bit pmod
-	bvc :rts
+	bpl :rts
 
 	sty DECANM
 	cpy #0
@@ -315,7 +378,7 @@ mode_DECANM
 
 mode_DECSCNM
 	bit pmod
-	bvc :rts
+	bpl :rts
 
 * todo - invert on-screen characters?
 	sty DECSCNM
@@ -323,7 +386,7 @@ mode_DECSCNM
 
 mode_DECOM
 	bit pmod
-	bvc :rts
+	bpl :rts
 
 	sty DECOM
 	; move to the new home position
@@ -342,27 +405,27 @@ mode_DECOM
 
 mode_DECAWM
 	bit pmod
-	bvc :rts
+	bpl :rts
 
 	sty DECAWM
 :rts	rts
 
 mode_DECARM
 	bit pmod
-	bvc :rts
+	bpl :rts
 
 	sty DECARM
 :rts	rts
 
 mode_LNM
 	bit pmod
-	bvs :rts
+	bmi :rts
 
 	sty LNM
 :rts	rts
 
 
-char_attr
+csi_m
 * esc [ ... m
 	inc pcount
 	ldx #0
@@ -373,7 +436,6 @@ char_attr
 	lda SGR
 	and :and,y
 	ora :or,y
-	lda :table,y
 	sta SGR
 
 :next	inx
@@ -389,25 +451,45 @@ char_attr
 
 
 
-reset_tab
-* ESC H - set tab at current column [vt100.s]
+csi_g
 * ESC [ g, ESC [ 0 g - clear tab at column
 * ESC [ 3 g - clear all tabs
 
-	lda parm
+	lda parms
 	beq :0
 	cmp #3
 	beq :3
 	rts
-:0
-	ldx x
-	stz tabs,x
+
+:0	ldx x
+	jmp reset_tab
+:3	jmp reset_all_tabs
+
+
+* cursor movement.
+csi_A
+csi_B
+csi_C
+csi_D 
 	rts
-:3
-	ldx #80-1
-:loop	stz tabs,x
-	dex
-	bpl :loop
+
+csi_f
+csi_H ; direct cursor addressing
+	rts
+
+csi_r ; scrolling region
+	rts
+
+csi_J ; erase
+	rts
+csi_K ; erase
+	rts
+
+csi_q ; LEDs
+	rts
+csi_n  ; status report
+csi_c  ; what are you?
+csi_y  ; invoke confidence test
 	rts
 
 	sav vt100.csi.L

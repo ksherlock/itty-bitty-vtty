@@ -905,7 +905,7 @@ ctrl_1b ; escape -
 ctrl_09 ; tab
 
 	lda x
-	cmp #73
+	cmp #72
 	bcs :one
 
 	clc

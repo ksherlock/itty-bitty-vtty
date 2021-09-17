@@ -67,12 +67,15 @@ bs
 * backspace, no wrap
 	lda x
 	beq :rts
-	dec x
+	and #$7f
+	dec
+	sta x
 	jmp update_cursor
 :rts	rts
 
 tab
 * go to next tab stop
+* tab at 80 does not reset overflow.
 	rts
 
 lf

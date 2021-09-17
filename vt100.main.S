@@ -104,6 +104,7 @@ ctrl_18
 ctrl_1a
 * vt100 - abort current escape sequence
 * and display error character.
+* TODO - display error character (mouse text)
 	lda DECANM
 	bne :vt52
 	lda #st_vt100
@@ -116,9 +117,11 @@ ctrl_1a
 	rts
 
 ctrl_08 ; back space
-	ldx x
+	lda x
 	beq :rts
-	dec x
+	and #$7f
+	dec
+	sta x
 	jmp update_cursor
 :rts
 
@@ -126,9 +129,11 @@ ctrl_09 ; tab
 * vt100 has adjustable tabs.
 	ext next_tab_stop
 	ldx x
+	bmi :rts
 	jsr next_tab_stop
 	stx x
 	jmp update_cursor
+:rts rts
 
 ctrl_0a ; line feed - cursor down w/ scroll
 ctrl_0b ; vertical tab
@@ -136,18 +141,19 @@ ctrl_0c ; form feed.
 
 * if LNM is active, equivalent to CR, LF
 
-	lda #LNM
-	bne :lnm
+	bit #LNM
+	bpl :lf
 	stz x
-:lnm
 
+:lf
 	lda y
-	cmp #23
+	cmp #DECBM
 	blt :simple
 
-	lda #" "
+	lda #" " ; needs to factor in reverse video
 	sta cursor_saved_char
 	jmp scroll_down
+* if LNM mode, need to update cursor as well.
 
 :simple
 	inc y

@@ -9,6 +9,8 @@
 
 	use vt.equ
 
+	mx %11
+
 	ext update_cursor,reset_tab,reset_all_tabs
 
 vt100_csi ent

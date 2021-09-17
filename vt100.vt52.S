@@ -1,15 +1,19 @@
-*
-* vt52 emulation for the vt100
-*
-* ESC < exits 
-
 	lst off
 
 	rel
 	xc
 	xc
-
 	use vt.equ
+
+	mx %11
+
+*
+* vt52 emulation for the vt100
+*
+* ESC < exits 
+
+
+
 
 	ext update_cursor,write_modem,draw_char
 
@@ -129,7 +133,9 @@ esc_D ; cursor left
 
 	lda x
 	beq :rts
-	dec x
+	and #$7f
+	dec
+	sta x
 	jmp update_cursor
 :rts	rts
 

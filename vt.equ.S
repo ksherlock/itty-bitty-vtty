@@ -20,6 +20,7 @@ ESC	equ $1b
 state	ds 2
 x	ds 2
 y	ds 2
+
 DECTM	ds 2 ; top margin
 DECBM	ds 2 ; bottom margin
 
@@ -55,10 +56,18 @@ pcount	ds	2
 parms	ds	MAX_PCOUNT
 pmod	ds	2
 
+; scratch registers
 r0	ds	2
 
-* saved character for cursor 
-cursor_saved_char ds 2
+
+cursor_saved_char ds 2 ; saved char under the cursor
+cursor_base	ds 4
+cursor_offset	ds 2
+cursor_char	ds 2 ; cursor character
+cursor_state	ds 2 ; on/off/disabled.
+
+draw_inverse	ds 2 ; flag to draw inverse
+erase_char	ds 2 ; clear character
 
 	do *>256
 	err "too big"

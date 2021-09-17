@@ -6,13 +6,15 @@
 
 	use vt.equ
 
+	mx %11
+
+
 vt100_esc ent
 * #[()=>cH78DEM
 * based on testing, unspecified chars in the 0x20-0x2f range cause it to gobble
 * chars until 0x30- terminator (which ends the sequence but does not take an action)
 
 * esc 1 -> hangs? [undocumented]
-
 
 	ldx #st_vt100
 	stx state
@@ -137,7 +139,9 @@ esc_gt ; exit alternate keypad mode
 esc_H ; set tab stop
 	ext set_tab
 	ldx x
+	bmi :rts
 	jmp set_tab
+:rts	rts
 
 esc_E ; next line
 	stz x

@@ -1,13 +1,14 @@
 
 	lst off
-	cas se
 	rel
 	xc
 	xc
 
+	mx %11
 	use vt.equ
 
-	ext update_cursor,scroll_down
+	ext scroll_down
+	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
 
 vt100
 	mx %11
@@ -24,17 +25,16 @@ vt100
 
 
 :state_table
-	ext vt52_esc,vt52_dca_1,vt52_dca_2
+	ext vt52_esc,vt52_dca
 	ext vt100_esc,vt100_csi,vt100_csi_2
 	ext vt100_esc_pound,vt100_esc_lparen,vt100_esc_rparen
 	ext vt100_esc_bad,vt100_csi_bad
-	ext char
+	ext draw_char
 
-	dw char
+	dw draw_char
 	dw vt52_esc
-	dw vt52_dca_1
-	dw vt52_dca_2
-	dw char
+	dw vt52_dca
+	dw draw_char
 	dw vt100_esc
 	dw vt100_csi
 	dw vt100_csi_2
@@ -122,7 +122,7 @@ ctrl_08 ; back space
 	and #$7f
 	dec
 	sta x
-	jmp update_cursor
+	jmp recalc_cursor_x
 :rts
 
 ctrl_09 ; tab
@@ -132,7 +132,7 @@ ctrl_09 ; tab
 	bmi :rts
 	jsr next_tab_stop
 	stx x
-	jmp update_cursor
+	jmp recalc_cursor_x
 :rts rts
 
 ctrl_0a ; line feed - cursor down w/ scroll
@@ -144,24 +144,25 @@ ctrl_0c ; form feed.
 	bit #LNM
 	bpl :lf
 	stz x
+	jsr recalc_cursor_x
 
 :lf
 	lda y
 	cmp #DECBM
 	blt :simple
 
-	lda #" " ; needs to factor in reverse video
-	sta cursor_saved_char
+*	lda #" " ; needs to factor in reverse video
+*	sta cursor_saved_char
 	jmp scroll_down
 * if LNM mode, need to update cursor as well.
 
 :simple
 	inc y
-	jmp update_cursor
+	jmp recalc_cursor_y
 
 ctrl_0d ; carriage return - cursor to column 0.
 	stz x
-	jmp update_cursor
+	jmp recalc_cursor_x
 
 
 	sav vt100.main.L

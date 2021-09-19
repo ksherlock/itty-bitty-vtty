@@ -15,8 +15,8 @@
 
 
 
-	ext update_cursor,write_modem,draw_char
-
+	ext write_modem,draw_char
+	ext advance_x,recalc_cursor,recalc_cursor_x,recalc_cursor_y
 
 
 vt52_esc ent
@@ -103,7 +103,7 @@ esc_A ; cursor up.
 	cmp DECTM
 	beq :rts
 	dec y
-	jmp update_cursor
+	jmp recalc_cursor_y
 
 :rts	rts
 
@@ -115,7 +115,7 @@ esc_B ; cursor down
 	cmp DECBM
 	beq :rts
 	iny y
-	jmp update_cursor
+	jmp recalc_cursor_y
 
 :rts	rts
 
@@ -126,7 +126,7 @@ esc_C ; cursor right
 	cmp #79
 	bcs :rts
 	inc x
-	jmp update_cursor
+	jmp recalc_cursor_x
 :rts	rts
 
 esc_D ; cursor left
@@ -136,7 +136,7 @@ esc_D ; cursor left
 	and #$7f
 	dec
 	sta x
-	jmp update_cursor
+	jmp recalc_cursor_x
 :rts	rts
 
 esc_I ; cursor up w/ line scroll
@@ -157,7 +157,7 @@ esc_H ; cursor home
 	lda DECTM
 	sta y
 
-:go	jmp update_cursor
+:go	jmp recalc_cursor
 
 
 esc_F ; enter graphics mode
@@ -198,7 +198,7 @@ esc_Z ; terminal identity.
 
 
 
-vta52_dca ent
+vt52_dca ent
 * this differs from esc [ H in that invalid
 * values are ignored rather than clamped.
 * based on testing, does not respect DECOM.
@@ -225,7 +225,7 @@ vta52_dca ent
 	sta y
 :update
 	stz :tmp
-	jmp update_cursor
+	jmp recalc_cursor
 
 
 :tmp	ds 2

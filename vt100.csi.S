@@ -11,7 +11,8 @@
 
 	mx %11
 
-	ext update_cursor,reset_tab,reset_all_tabs
+	ext reset_tab,reset_all_tabs
+	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
 
 vt100_csi ent
 * 0123456789;ycnlhgrqJKmABCDHf
@@ -400,7 +401,7 @@ mode_DECOM
 	sta y
 
 	phy
-	jsr update_cursor
+	jsr recalc_cursor
 	ply
 
 :rts	rts
@@ -517,7 +518,7 @@ csi_H ; direct cursor addressing
 	ldx #79
 :xxx	stx x
 
-	jmp update_cursor
+	jmp recalc_cursor
 
 csi_r ; scrolling region
 * based on testing
@@ -563,7 +564,7 @@ csi_r ; scrolling region
 	lda parms+1
 	sta DECBM
 	stz x
-	jmp update_cursor
+	jmp recalc_cursor
 
 :rts	rts
 

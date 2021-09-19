@@ -1,4 +1,7 @@
 
+	cas se
+
+
 st_vt52		equ 0
 st_vt52_esc	equ 2
 st_vt52_dca	equ 4
@@ -68,6 +71,11 @@ cursor_state	ds 2 ; on/off/disabled.
 
 draw_inverse	ds 2 ; flag to draw inverse
 erase_char	ds 2 ; clear character
+
+
+* keypress data.
+key		ds 2
+mod		ds 2
 
 	do *>256
 	err "too big"

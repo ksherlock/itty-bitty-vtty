@@ -27,6 +27,28 @@ argv = sys.argv[1:]
 
 chars = []
 for arg in argv:
+
+	if arg == "--ctrl":
+		for c in range(0,32):
+			chars.append(chr(c))
+		continue
+
+	if arg == "--upper":
+		for c in range(ord('A'), ord('Z')+1):
+			chars.append(chr(c))
+		continue
+
+	if arg == "--lower":
+		for c in range(ord('a'), ord('z')+1):
+			chars.append(chr(c))
+		continue
+
+	if arg == "--digit":
+		for c in range(ord('0'), ord('9')+1):
+			chars.append(chr(c))
+		continue
+
+
 	# ^X is a control character
 	if len(arg) == 2 and arg[0] == '^':
 		c = chr(ord(arg[1]) & 0x1f)

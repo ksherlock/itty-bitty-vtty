@@ -1,5 +1,5 @@
 
-*	lst off
+	lst off
 	rel
 	xc
 	xc
@@ -308,4 +308,4 @@ arrow
 	lda key
 	jmp dispatch
 
-	sav vt52.key.L
+	sav vt100.key.L

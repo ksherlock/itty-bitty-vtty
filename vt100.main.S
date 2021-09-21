@@ -9,6 +9,91 @@
 
 	ext scroll_down
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
+	ext write_modem,read_modem,init_modem,keypress
+	ext disable_cursor,enable_cursor
+	ext erase_screen
+
+SET80VID	equ $c00d
+SETALTCHAR	equ $c00f
+TXTSET		equ $c051
+VGCINT		equ $c023
+SCANINT		equ $c032
+
+main
+
+	clc
+	xce
+	cli
+
+	jsr init
+	jsr enable_cursor
+
+
+	lda #4
+	tsb VGCINT ; enable 1-sec interrupt.
+	stz SCANINT ; reset 1-sec interrupt
+
+
+
+loop
+	bit LOCAL
+	bmi :kb
+	jsr read_modem
+	bcc :kb
+	pha
+	jsr disable_cursor
+	pla
+	jsr vt100
+:kb	
+	jsr keypress
+	jsr enable_cursor
+	bra loop
+
+init
+	sta TXTSET
+	sta SET80VID
+	sta SETALTCHAR
+	rep #$30
+
+	ldx #254
+:zloop	stz 0,x
+	dex
+	dex
+	bpl :zloop
+
+	lda #$0400
+	sta cursor_base
+	lda #$01
+	sta cursor_base+2
+
+	sep #$30
+
+	lda #"_"
+	sta cursor_char
+	lda #" "
+	sta erase_char
+
+
+	lda #23
+	sta DECBM
+
+	jsr erase_screen
+	jsr init_modem
+	rts
+
+
+dispatch ent
+	mx %11
+* a = character to xmit
+	bit LOCAL
+	bmi :local
+	jmp write_modem
+:local
+	pha
+	jsr disable_cursor
+	pla
+
+* fall through
 
 vt100
 	mx %11

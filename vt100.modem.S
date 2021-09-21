@@ -15,7 +15,7 @@ SCCADATA	equ $c03b
 
 
 
-init_modem
+init_modem ent
 	sep #$30
 * reset channel B (modem port)
 	ldx #9

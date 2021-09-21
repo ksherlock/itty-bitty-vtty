@@ -13,6 +13,7 @@
 	asm vt100.csi.S
 	asm vt100.screen.S
 	asm vt100.modem.S
+	asm vt100.key.S
 
 
 *	lnk boot.S
@@ -30,5 +31,6 @@
 	lnk vt100.csi.L
 	lnk vt100.screen.L
 	lnk vt100.modem.L
+	lnk vt100.key.L
 
 	sav vt100.bin

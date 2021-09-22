@@ -258,6 +258,7 @@ fill_screen ent
 * fill the entire screen with the a register.
 * text screen is out of order, so this doesn't use much code but
 * it's not linear either.
+* +64 bytes of screen hole data.
 	mx %11
 
 	sta >$000400
@@ -268,13 +269,13 @@ fill_screen ent
 
 	ldx #$0400
 	ldy #$0401
-	lda #40*24-2
-	mvn $01,$01
+	lda #40*24+64-2
+	mvn $010000,$010000
 
 	ldx #$0400
 	ldy #$0401
-	lda #40*24-2
-	mvn $00,$00
+	lda #40*24+64-2
+	mvn $000000,$000000
 
 * not needed since $0,$0 last
 *	phk
@@ -318,13 +319,13 @@ scroll_up ent
 	lda #40
 	ldx #]1
 	ldy #]2
-	mvn $1,$1
+	mvn $010000,$010000
 
 	lda #$40
 	lda #40
 	ldx #]1
 	ldy #]2
-	mvn $0,$0
+	mvn $000000,$000000
 
 	dec r0
 	bne *+5
@@ -412,13 +413,13 @@ scroll_down ent
 	lda #40
 	ldx #]1
 	ldy #]2
-	mvn $1,$1
+	mvn $010000,$010000
 
 	lda #$40
 	lda #40
 	ldx #]1
 	ldy #]2
-	mvn $0,$0
+	mvn $000000,$000000
 
 	dec r0
 	bne *+5

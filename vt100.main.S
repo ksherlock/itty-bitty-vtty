@@ -6,6 +6,7 @@
 
 	mx %11
 	use vt.equ
+	use debug
 
 	ext scroll_down
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
@@ -19,7 +20,7 @@ TXTSET		equ $c051
 VGCINT		equ $c023
 SCANINT		equ $c032
 
-main
+main	debug main
 
 	clc
 	xce
@@ -76,6 +77,11 @@ init
 
 	lda #23
 	sta DECBM
+	lda #$80
+	sta LOCAL
+
+	lda #st_vt52
+	sta state
 
 	jsr erase_screen
 	jsr init_modem
@@ -174,8 +180,8 @@ ctrl_1b ; escape -
 * vt100 - aborts current escape sequence and starts a new one.
 * vt52 - esc esc aborts and starts new 
 * vt50 - esc esc aborts
-	lda DECANM
-	bne :vt52
+	bit DECANM
+	bpl :vt52
 	lda #st_vt100_esc
 	sta state
 	rts
@@ -190,8 +196,8 @@ ctrl_1a
 * vt100 - abort current escape sequence
 * and display error character.
 * TODO - display error character (mouse text)
-	lda DECANM
-	bne :vt52
+	bit DECANM
+	bpl :vt52
 	lda #st_vt100
 	sta state
 	rts

@@ -2,7 +2,7 @@
 	ovr all
 * binary linker
 	lkv 0
-	org $6000
+	org $2000
 
 *	asm boot.S
 *	asm vt100.ctrl.S
@@ -33,4 +33,5 @@
 	lnk vt100.modem.L
 	lnk vt100.key.L
 
-	sav vt100.bin
+	typ $ff
+	sav vt100.sys

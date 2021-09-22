@@ -110,11 +110,11 @@ esc_A ; cursor up.
 
 esc_B ; cursor down
 	lda y
-	cmp #79
+	cmp #23
 	beq :rts
 	cmp DECBM
 	beq :rts
-	iny y
+	inc y
 	jmp recalc_cursor_y
 
 :rts	rts
@@ -225,6 +225,8 @@ vt52_dca ent
 	sta y
 :update
 	stz :tmp
+	lda #st_vt52
+	sta state
 	jmp recalc_cursor
 
 

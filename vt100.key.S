@@ -6,6 +6,7 @@
 
 	mx %11
 	use vt.equ
+	use debug
 
 	ext dispatch
 
@@ -24,6 +25,7 @@ kmOption	equ %0100_0000
 kmCommand	equ %1000_0000
 
 keypress ent
+	debug keypress
 	lda KBD
 	bmi :key
 	rts
@@ -50,6 +52,7 @@ keypress ent
 
 	asl
 	tax
+	lsr ; restore
 	jmp (special,x)
 
 :ctrl
@@ -290,9 +293,9 @@ arrow
 	lda #ESC
 	jsr dispatch
 
-	tsb DECANM
-	bmi :vt52
-	tsb DECCKM
+	bit DECANM
+	bpl :vt52
+	bit DECCKM
 	bmi :cursor
 
 	lda #'['

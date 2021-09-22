@@ -49,7 +49,7 @@ keypress ent
 
 * control char w/o control bit.
 * ie, arrow key / return / tab
-
+* no cmp / sbc needed
 	asl
 	tax
 	lsr ; restore
@@ -77,6 +77,8 @@ keypad
 	blt :rts
 	cmp #:MAX+1
 	bcs :rts
+	sec
+	sbc #:MIN
 	asl
 	tax
 	jmp (:table,x)

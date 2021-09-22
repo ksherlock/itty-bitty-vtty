@@ -13,6 +13,7 @@
 	ext write_modem,read_modem,init_modem,keypress
 	ext disable_cursor,enable_cursor
 	ext erase_screen
+	ext init_tabs
 
 SET80VID	equ $c00d
 SETALTCHAR	equ $c00f
@@ -85,6 +86,7 @@ init
 
 	jsr erase_screen
 	jsr init_modem
+	jsr init_tabs
 	rts
 
 
@@ -240,7 +242,7 @@ ctrl_0c ; form feed.
 :lf
 	lda y
 	cmp #DECBM
-	blt :simple
+	bne :simple
 
 *	lda #" " ; needs to factor in reverse video
 *	sta cursor_saved_char

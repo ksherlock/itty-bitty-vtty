@@ -397,7 +397,7 @@ mode_DECOM
 	stz y
 	cpy #0
 	beq :rts
-	lda #DECTM
+	lda DECTM
 	sta y
 
 	phy

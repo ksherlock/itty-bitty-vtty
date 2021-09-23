@@ -68,12 +68,13 @@ init
 	lda #$01
 	sta cursor_base+2
 
+	lda #"  " ; 16-bit
+	sta erase_char
+
 	sep #$30
 
 	lda #"_"
 	sta cursor_char
-	lda #" "
-	sta erase_char
 
 
 	lda #23
@@ -241,7 +242,7 @@ ctrl_0c ; form feed.
 
 :lf
 	lda y
-	cmp #DECBM
+	cmp DECBM
 	bne :simple
 
 *	lda #" " ; needs to factor in reverse video

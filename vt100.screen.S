@@ -315,14 +315,12 @@ scroll_up ent
 
 * mvn 1,1 first so mvn 0,0 will restore b
 :cp	mac
-	lda #$40
-	lda #40
+	lda #40-1
 	ldx #]1
 	ldy #]2
 	mvn $010000,$010000
 
-	lda #$40
-	lda #40
+	lda #40-1
 	ldx #]1
 	ldy #]2
 	mvn $000000,$000000
@@ -409,14 +407,12 @@ scroll_down ent
 
 
 :cp	mac
-	lda #$40
-	lda #40
+	lda #40-1
 	ldx #]1
 	ldy #]2
 	mvn $010000,$010000
 
-	lda #$40
-	lda #40
+	lda #40-1
 	ldx #]1
 	ldy #]2
 	mvn $000000,$000000

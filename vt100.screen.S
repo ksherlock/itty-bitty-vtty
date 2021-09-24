@@ -5,6 +5,7 @@
 	xc
 	xc
 	use vt.equ
+	use apple2gs.equ
 
 	mx %11
 
@@ -76,8 +77,10 @@ enable_cursor ent
 	bvc :80
 
 * option for inverted cursor?
-	lda cursor_char
 	ldy cursor_offset
+	lda [cursor_base],y
+	sta cursor_saved_char
+	lda cursor_char
 	sta [cursor_base],y
 
 :80	lda #$80
@@ -85,6 +88,41 @@ enable_cursor ent
 
 :rts	plp
 	rts
+
+
+cursor_vector	ent
+	jml cursor_int
+
+cursor_int
+* cursor interrupt - blink the cursor.
+
+	mx %11
+
+	ldy cursor_offset
+
+	lda cursor_state
+	bmi :rts
+	eor #$40
+	sta cursor_state
+	beq :off
+:on
+	lda [cursor_base],y
+	sta cursor_saved_char
+	lda cursor_char
+	sta [cursor_base],y
+
+	bra :rts
+
+:off
+	lda cursor_saved_char
+	sta [cursor_base],y
+
+:rts	stz SCANINT ; reset 1-sec interrupt
+	clc
+	rtl
+
+
+
 
 recalc_cursor ent
 * recalculate the cursor pointer after x/y changed
@@ -190,7 +228,7 @@ draw_char ent
 
 :normal	ora #$80
 :draw
-
+*	sta cursor_saved_char
 
 * with DECAWM, x = 79, will CR LF (with scroll) before drawing character.
 

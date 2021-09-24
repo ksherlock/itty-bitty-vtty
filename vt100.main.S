@@ -6,20 +6,15 @@
 
 	mx %11
 	use vt.equ
+	use apple2gs.equ
 	use debug
 
 	ext scroll_down
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
 	ext write_modem,read_modem,init_modem,keypress
-	ext disable_cursor,enable_cursor
+	ext disable_cursor,enable_cursor,cursor_vector
 	ext erase_screen
 	ext init_tabs
-
-SET80VID	equ $c00d
-SETALTCHAR	equ $c00f
-TXTSET		equ $c051
-VGCINT		equ $c023
-SCANINT		equ $c032
 
 main	debug main
 
@@ -70,6 +65,19 @@ init
 
 	lda #"  " ; 16-bit
 	sta erase_char
+
+
+
+	lda #$0080
+	sta cursor_state
+	sei
+	lda cursor_vector
+	stal IRQ1SEC
+	lda cursor_vector+2
+	stal IRQ1SEC+2
+	cli
+
+	lda #0 ; clear high byte
 
 	sep #$30
 

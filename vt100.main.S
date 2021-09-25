@@ -259,8 +259,12 @@ ctrl_0c ; form feed.
 * if LNM mode, need to update cursor as well.
 
 :simple
+	cmp #23
+	beq :rts
 	inc y
 	jmp recalc_cursor_y
+
+:rts	rts
 
 ctrl_0d ; carriage return - cursor to column 0.
 	stz x

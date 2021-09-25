@@ -17,7 +17,7 @@
 
 	ext write_modem,draw_char
 	ext advance_x,recalc_cursor,recalc_cursor_x,recalc_cursor_y
-
+	ext scroll_up,scroll_down
 
 vt52_esc ent
 * ABCDFGHIJKYZ<>=
@@ -142,18 +142,31 @@ esc_D ; cursor left
 esc_I ; cursor up w/ line scroll
 * based on testing, scrolling only occurs within the
 * scroll region.
-	rts
-esc_J rts
-esc_K rts
+	lda y
+	cmp DECTM
+	beq :scroll
+	cmp #0
+	beq :rts
+	dec y
+	jmp recalc_cursor_y
 
+:scroll	jmp scroll_up
+:rts	rts
+
+esc_J
+* erase cursor to end of screen.
+	ext erase_screen_0
+	jmp erase_screen_0
+	rts
+esc_K
+* erase cursor to end of line
+	ext erase_line_0
+	jmp erase_line_0
 
 esc_H ; cursor home
 	; based on testing, does not respect scrolling region but does
 	; respect origin mode.
 	stz x
-*	stz y
-*	bit DECOM
-*	bpl :go
 	lda DECTM
 	sta y
 

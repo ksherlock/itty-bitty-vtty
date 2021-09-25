@@ -288,7 +288,12 @@ draw_char ent
 	rts	
 
 
+* erase screen commands are not affected by origin or scrolling region.
+
 erase_screen ent
+erase_screen_2 ent
+* erase the entire screen.
+
 	mx %11
 	lda erase_char
 * fall through
@@ -618,10 +623,99 @@ erase_line_1 ent
 :exit	plp
 	rts
 
+erase_screen_0 ent
+* erase cursor to end of screen.
+	mx %11
+	jsr erase_line_0
+	php
+	rep #$30
 
-* erase screen commands are not affected by origin or scrolling region.
-* erase screen
-* erase start -> cursor
-* erase cursor -> end
+	lda y
+	inc
+	cmp #24
+	bcs :exit
+	asl
+	tay
+	lda erase_char
+
+:loop
+
+	sty r0
+	ldx text,y
+	ldy #19
+:loop0
+	sta >$000000,x
+	inx
+	inx
+	dey
+	bpl :loop0
+
+	ldy r0
+	ldx text,y
+	ldy #19
+:loop1
+	sta >$010000,x
+	inx
+	inx
+	dey
+	bpl :loop1
+
+	ldy r0
+	iny
+	iny
+	cpy #24*2
+	bcc :loop
+
+:exit
+	plp
+	rts
+
+erase_screen_1 ent
+* erase beginning of screen to cursor.
+	mx %11
+	jsr erase_line_1
+
+	php
+	rep #$30
+
+	lda y
+	dec
+	bmi :exit
+	asl
+	tay
+	lda erase_char
+
+:loop
+
+	sty r0
+	ldx text,y
+	ldy #19
+:loop0
+	sta >$000000,x
+	inx
+	inx
+	dey
+	bpl :loop0
+
+	ldy r0
+	ldx text,y
+	ldy #19
+:loop1
+	sta >$010000,x
+	inx
+	inx
+	dey
+	bpl :loop1
+
+	ldy r0
+	dey
+	dey
+	bpl :loop
+
+
+:exit
+	plp
+	rts
+	rts
 
 	sav vt100.screen.L

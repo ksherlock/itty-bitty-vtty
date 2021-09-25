@@ -1,6 +1,6 @@
 
 
-	lst off
+*	lst off
 	cas se
 
 	rel
@@ -8,6 +8,7 @@
 	xc
 
 	use vt.equ
+	use debug
 
 	mx %11
 
@@ -15,6 +16,8 @@
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
 
 vt100_csi ent
+	debug vt100_csi
+
 * 0123456789;ycnlhgrqJKmABCDHf
 
 * based on testing - 
@@ -153,6 +156,7 @@ vt100_csi_bad ent
 
 
 vt100_csi_2 ent
+	debug vt100_csi_2
 
 	cmp #:MIN
 	blt :end
@@ -160,6 +164,8 @@ vt100_csi_2 ent
 	bge :end
 	sec
 	sbc #:MIN
+	asl
+	tax
 	jmp (:table,x)
 
 :badmod
@@ -478,6 +484,10 @@ csi_D
 
 csi_f
 csi_H ; direct cursor addressing
+
+	debug csi_H
+
+
 * honors origin
 * large numbers are clamped
 * 0 or 1 treated as 1 (1-based counting)

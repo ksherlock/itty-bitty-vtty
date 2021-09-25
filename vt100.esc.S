@@ -9,10 +9,14 @@
 	mx %11
 
 
+	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
+	ext scroll_up,scroll_down
+
 vt100_esc ent
 * #[()=>cH78DEM
-* based on testing, unspecified chars in the 0x20-0x2f range cause it to gobble
-* chars until 0x30- terminator (which ends the sequence but does not take an action)
+* based on testing, unspecified chars in the 0x20-0x2f range cause it
+* to gobble chars until 0x30- terminator (which ends the sequence but
+* does not take an action)
 
 * esc 1 -> hangs? [undocumented]
 
@@ -40,69 +44,69 @@ vt100_esc ent
 
 :table
 	dw :pound	; #
-	dw :bad	; $
-	dw :bad	; %
-	dw :bad	; &
-	dw :bad	; '
+	dw :bad		; $
+	dw :bad		; %
+	dw :bad		; &
+	dw :bad		; '
 	dw :lparen	; (
 	dw :rparen	; )
-	dw :bad	; *
-	dw :bad	; +
-	dw :bad	; ,
-	dw :bad	; -
-	dw :bad	; .
-	dw :bad	; /
-	dw :rts	; 0
-	dw :rts	; 1
-	dw :rts	; 2
-	dw :rts	; 3
-	dw :rts	; 4
-	dw :rts	; 5
-	dw :rts	; 6
+	dw :bad		; *
+	dw :bad		; +
+	dw :bad		; ,
+	dw :bad		; -
+	dw :bad		; .
+	dw :bad		; /
+	dw :rts		; 0
+	dw :rts		; 1
+	dw :rts		; 2
+	dw :rts		; 3
+	dw :rts		; 4
+	dw :rts		; 5
+	dw :rts		; 6
 	dw esc_7	; 7
 	dw esc_8	; 8
-	dw :rts	; 9
-	dw :rts	; :
-	dw :rts	; ;
-	dw :rts	; <
+	dw :rts		; 9
+	dw :rts		; :
+	dw :rts		; ;
+	dw :rts		; <
 	dw esc_eq	; =
 	dw esc_gt	; >
-	dw :rts	; ?
-	dw :rts	; @
-	dw :rts	; A
-	dw :rts	; B
-	dw :rts	; C
+	dw :rts		; ?
+	dw :rts		; @
+	dw :rts		; A
+	dw :rts		; B
+	dw :rts		; C
 	dw esc_D	; D
-	dw esc_E ; E
-	dw :rts	; F
-	dw :rts	; G
+	dw esc_E	; E
+	dw :rts		; F
+	dw :rts		; G
 	dw esc_H	; H
-	dw :rts	; I
-	dw :rts	; J
-	dw :rts	; K
-	dw :rts	; L
+	dw :rts		; I
+	dw :rts		; J
+	dw :rts		; K
+	dw :rts		; L
 	dw esc_M	; M
-	dw :rts	; N
-	dw :rts	; O
-	dw :rts	; P
-	dw :rts	; Q
-	dw :rts	; R
-	dw :rts	; S
-	dw :rts	; T
-	dw :rts	; U
-	dw :rts	; V
-	dw :rts	; W
-	dw :rts	; X
-	dw :rts	; Y
-	dw :rts	; Z
-	dw :rts	; [
-	dw :rts	; \
-	dw :rts	; ]
-	dw :rts	; ^
-	dw :rts	; _
-	dw :rts	; `
-	dw :rts	; a
-	dw :rts	; b
+	dw :rts		; N
+	dw :rts		; O
+	dw :rts		; P
+	dw :rts		; Q
+	dw :rts		; R
+	dw :rts		; S
+	dw :rts		; T
+	dw :rts		; U
+	dw :rts		; V
+	dw :rts		; W
+	dw :rts		; X
+	dw :rts		; Y
+	dw :rts		; Z
+	dw :csi		; [
+	dw :rts		; \
+	dw :rts		; ]
+	dw :rts		; ^
+	dw :rts		; _
+	dw :rts		; `
+	dw :rts		; a
+	dw :rts		; b
 	dw esc_c	; c
 
 
@@ -119,6 +123,11 @@ vt100_esc ent
 
 :pound
 	ldx #st_vt100_esc_pound
+	stx state
+	rts
+
+:csi
+	ldx #st_vt100_csi
 	stx state
 	rts
 
@@ -144,13 +153,45 @@ esc_H ; set tab stop
 :rts	rts
 
 esc_E ; next line
+* This sequence causes the active position to move to the first position
+* on the next line downward. If the active position is at the bottom
+* margin, a scroll up is performed. 
 	stz x
+	jsr recalc_cursor_x
 	; drop through
 esc_D ; index
-	rts
+* This sequence causes the active position to move downward one line
+* without changing the column position. If the active position is at the
+* bottom margin, a scroll up is performed.
+
+	lda y
+	cmp DECBM
+	beq :scroll
+	cmp #23
+	beq :rts
+	inc y
+	jmp recalc_cursor_y
+
+:scroll	jmp scroll_down
+:rts	rts
+
 
 esc_M ; reverse index
-	rts
+* Move the active position to the same horizontal position on the
+* preceding line. If the active position is at the top margin, a scroll
+* down is performed.
+
+	lda y
+	cmp DECTM
+	beq :scroll
+	cmp #0
+	beq :rts
+	dec y
+	jmp recalc_cursor_y
+
+:scroll	jmp scroll_up
+:rts	rts
+
 
 esc_c ; reset terminal.
 	rts
@@ -174,23 +215,27 @@ vt100_esc_pound ent
 * esc # 6 - make line double width
 
 * esc # 8 - screen alignment - fill screen with E (SGR not honored)
-* based on testing, this also resets the scrolling region and homes the cursor.
+* based on testing, this also resets the scrolling region and homes
+* the cursor.
 
-* based on testing, 0+ are term characters, 0x20-0x2f puts it in esc_bad state
+* based on testing, 0+ are term characters, 0x20-0x2f puts it in
+* esc_bad state
 
 	ldx #st_vt100
-	sta state
+	stx state
 
-	cmp #:MIN ; must be 0.
+	cmp #:MIN
 	blt :bad
 	cmp #:MAX+1
 	bge :rts
+	sec
+	sbc #:MIN
 	asl
 	tax
 	jmp (:table,x)
 
 :bad	ldx #st_vt100_esc_bad
-	sta state
+	stx state
 :rts	rts
 
 :MIN	equ 48
@@ -208,7 +253,18 @@ vt100_esc_pound ent
 	dw :e	; 8
 	dw :rts	; 9
 
-:e	rts
+:e
+* TODO - does this reset DECOM?
+	ext fill_screen
+	stz x
+	stz y
+	stz DECTM
+	lda #23
+	sta DECBM
+	jsr recalc_cursor
+
+	lda #"E"
+	jmp fill_screen
 
 
 vt100_esc_lparen ent
@@ -227,14 +283,14 @@ vt100_esc_rparen ent
 * not currently supported.
 
 	ldx #st_vt100
-	sta state
+	stx state
 
 	cmp #'0'
 	blt :bad
 	rts
 
 :bad	ldx #st_vt100_esc_bad
-	sta state
+	stx state
 :rts	rts
 
 	sav vt100.esc.L

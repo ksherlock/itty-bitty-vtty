@@ -1,6 +1,6 @@
 
 
-*	lst off
+	lst off
 	cas se
 
 	rel
@@ -30,8 +30,8 @@ vt100_csi ent
 * a mis-placed < = > ? will prevent 0x20-0x2f from terminating the sequence.
 
 
-	inc state
-	inc state
+	ldx #st_vt100
+	stx state
 
 	stz pcount
 	stz parms
@@ -40,9 +40,9 @@ vt100_csi ent
 
 *	tay ; save for modifier
 	cmp #:MIN
-	blt :end
+	blt :rts
 	cmp #:MAX+1
-	bge :end
+	bge :rts
 	sec
 	sbc #:MIN
 	asl
@@ -50,9 +50,6 @@ vt100_csi ent
 	jmp (:table,x)
 
 * 
-:end
-	ldx #st_vt100
-	stx state
 :rts	rts
 
 
@@ -72,79 +69,90 @@ vt100_csi ent
 	dw :digit	; 9
 	dw digit	; :
 	dw semi
-	dw :rts		; <
-	dw :rts		; =
-	dw :rts		; >
+	dw :xmod	; <
+	dw :xmod	; =
+	dw :xmod	; >
 	dw :modifier	; ?
-	dw :end		; @
+	dw :rts		; @
 	dw csi_A	; A
 	dw csi_B	; B
 	dw csi_C	; C
 	dw csi_D	; D
-	dw :end		; E
-	dw :end		; F
-	dw :end		; G
+	dw :rts		; E
+	dw :rts		; F
+	dw :rts		; G
 	dw csi_H	; H
-	dw :end		; I
+	dw :rts		; I
 	dw csi_J	; J
 	dw csi_K	; K
-	dw :end		; L
-	dw :end		; M
-	dw :end		; N
-	dw :end		; O
-	dw :end		; P
-	dw :end		; Q
-	dw :end		; R
-	dw :end		; S
-	dw :end		; T
-	dw :end		; U
-	dw :end		; V
-	dw :end		; W
-	dw :end		; X
-	dw :end		; Y
-	dw :end		; Z
-	dw :end		; [
-	dw :end		; \
-	dw :end		; ]
-	dw :end		; ^
-	dw :end		; _
-	dw :end		; `
-	dw :end		; a
-	dw :end		; b
+	dw :rts		; L
+	dw :rts		; M
+	dw :rts		; N
+	dw :rts		; O
+	dw :rts		; P
+	dw :rts		; Q
+	dw :rts		; R
+	dw :rts		; S
+	dw :rts		; T
+	dw :rts		; U
+	dw :rts		; V
+	dw :rts		; W
+	dw :rts		; X
+	dw :rts		; Y
+	dw :rts		; Z
+	dw :rts		; [
+	dw :rts		; \
+	dw :rts		; ]
+	dw :rts		; ^
+	dw :rts		; _
+	dw :rts		; `
+	dw :rts		; a
+	dw :rts		; b
 	dw csi_c	; c
-	dw :end		; d
-	dw :end		; e
+	dw :rts		; d
+	dw :rts		; e
 	dw csi_f	; f
 	dw csi_g	; g
 	dw csi_h	; h
-	dw :end		; i
-	dw :end		; j
-	dw :end		; k
+	dw :rts		; i
+	dw :rts		; j
+	dw :rts		; k
 	dw csi_l	; l
 	dw csi_m	; m
 	dw csi_n	; n
-	dw :end		; o
-	dw :end		; p
+	dw :rts		; o
+	dw :rts		; p
 	dw csi_q	; q
 	dw csi_r	; r
-	dw :end		; s
-	dw :end		; t
-	dw :end		; u
-	dw :end		; v
-	dw :end		; w
-	dw :end		; x
+	dw :rts		; s
+	dw :rts		; t
+	dw :rts		; u
+	dw :rts		; v
+	dw :rts		; w
+	dw :rts		; x
 	dw csi_y	; y
 
 
 :digit
+	ldx #st_vt100_csi_2
+	stx state
+
 	lsr ; undo asl
 	sta parms
 	rts
 :modifier
+	ldx #st_vt100_csi_2
+	stx state
+
 	lda #$80
 	sta pmod
 	rts
 
+:xmod
+* ignored.
+	ldx #st_vt100_csi_2
+	stx state
+	rts
 
 vt100_csi_bad ent
 	cmp #'@'
@@ -158,23 +166,19 @@ vt100_csi_bad ent
 vt100_csi_2 ent
 	debug vt100_csi_2
 
+	ldx #st_vt100
+	stx state
+
 	cmp #:MIN
-	blt :end
+	blt :rts
 	cmp #:MAX+1
-	bge :end
+	bge :rts
 	sec
 	sbc #:MIN
 	asl
 	tax
 	jmp (:table,x)
 
-:badmod
-	cmp #'@'
-	blt :rts
-
-:end
-	ldx #st_vt100
-	stx state
 :rts	rts
 
 :MIN	equ 48
@@ -196,63 +200,63 @@ vt100_csi_2 ent
 	dw :modifier	; =
 	dw :modifier	; >
 	dw :modifier	; ?
-	dw :end		; @
+	dw :rts		; @
 	dw csi_A	; A
 	dw csi_B	; B
 	dw csi_C	; C
 	dw csi_D	; D
-	dw :end		; E
-	dw :end		; F
-	dw :end		; G
+	dw :rts		; E
+	dw :rts		; F
+	dw :rts		; G
 	dw csi_H	; H
-	dw :end		; I
+	dw :rts		; I
 	dw csi_J	; J
 	dw csi_K	; K
-	dw :end		; L
-	dw :end		; M
-	dw :end		; N
-	dw :end		; O
-	dw :end		; P
-	dw :end		; Q
-	dw :end		; R
-	dw :end		; S
-	dw :end		; T
-	dw :end		; U
-	dw :end		; V
-	dw :end		; W
-	dw :end		; X
-	dw :end		; Y
-	dw :end		; Z
-	dw :end		; [
-	dw :end		; \
-	dw :end		; ]
-	dw :end		; ^
-	dw :end		; _
-	dw :end		; `
-	dw :end		; a
-	dw :end		; b
+	dw :rts		; L
+	dw :rts		; M
+	dw :rts		; N
+	dw :rts		; O
+	dw :rts		; P
+	dw :rts		; Q
+	dw :rts		; R
+	dw :rts		; S
+	dw :rts		; T
+	dw :rts		; U
+	dw :rts		; V
+	dw :rts		; W
+	dw :rts		; X
+	dw :rts		; Y
+	dw :rts		; Z
+	dw :rts		; [
+	dw :rts		; \
+	dw :rts		; ]
+	dw :rts		; ^
+	dw :rts		; _
+	dw :rts		; `
+	dw :rts		; a
+	dw :rts		; b
 	dw csi_c	; c
-	dw :end		; d
-	dw :end		; e
+	dw :rts		; d
+	dw :rts		; e
 	dw csi_f	; f
 	dw csi_g	; g
 	dw csi_h	; h
-	dw :end		; i
-	dw :end		; j
-	dw :end		; k
+	dw :rts		; i
+	dw :rts		; j
+	dw :rts		; k
 	dw csi_l	; l
 	dw csi_m	; m
 	dw csi_n	; n
-	dw :end		; o
-	dw :end		; p
+	dw :rts		; o
+	dw :rts		; p
 	dw csi_q	; q
 	dw csi_r	; r
-	dw :end		; s
-	dw :end		; t
-	dw :end		; u
-	dw :end		; v
-	dw :end		; w
-	dw :end		; x
+	dw :rts		; s
+	dw :rts		; t
+	dw :rts		; u
+	dw :rts		; v
+	dw :rts		; w
+	dw :rts		; x
 	dw csi_y	; y
 
 :modifier
@@ -261,6 +265,9 @@ vt100_csi_2 ent
 	rts
 
 semi
+	ldx #st_vt100_csi_2
+	stx state
+
 	ldx pcount
 	cpx #MAX_PCOUNT
 	bge :big
@@ -273,6 +280,9 @@ semi
 * parameter digit.  clamped to 255 (250+ rounds up to 255)
 * in 132 is the largest valid parameter so this is ok.
 digit
+	ldx #st_vt100_csi_2
+	stx state
+
 	lsr ; undo asl
 	sta r0
 	ldx pcount
@@ -296,9 +306,9 @@ digit
 	sta parms,x
 	rts
 
-:mult	da 0,10,20,30,40,50,60,70,80,90
-	da 100,110,120,130,140,150,160,170,180,190
-	da 200,210,220,230,240,250
+:mult	db 0,10,20,30,40,50,60,70,80,90
+	db 100,110,120,130,140,150,160,170,180,190
+	db 200,210,220,230,240,250
 
 
 
@@ -475,12 +485,114 @@ csi_g
 :3	jmp reset_all_tabs
 
 
+p1	mac
+	lda parms
+	bne ok
+	lda #1
+ok	sta r0
+	<<<
+
 * cursor movement.
 csi_A
+* up
+
+* if cursor is outside the scrolling region, it is not locked to the scrolling region.
+
+	p1
+
+	lda y
+	cmp DECTM
+	beq :rts
+	bcc :simple
+
+	sec
+	sbc r0
+	bcc :top
+	cmp #DECTM
+*	bcc :top
+*	bra :sta
+	bcs :sta
+
+:top	lda DECTM
+	bra :sta
+:rts	rts
+
+
+:simple
+*	lda y
+	sec
+	sbc r0
+*	bcc :0 ; clear indicate underflow.
+	bcc :sta
+:0	lda #0
+:sta	sta y
+	jmp recalc_cursor_y
+
 csi_B
+* down
+	p1
+
+	lda y
+	cmp DECBM
+	beq :rts
+	bge :simple
+
+	clc
+	adc r0
+	bcs :bottom ; overflow
+	cmp #DECBM
+	bcc :sta
+
+:bottom	lda DECBM
+	bra :sta
+:rts	rts
+
+:simple
+	clc
+	adc r0
+	bcs :23 ; overflow
+	cmp #24
+	bcc :sta
+
+:23	lda #23
+:sta	sta y
+	jmp recalc_cursor_y
+
 csi_C
+* right
+* TODO - what happens in column 80 w/ DECAWM?
+
+	p1
+	lda x
+	and #$7f
+
+	clc
+	adc r0
+	bcs :79 ; overflow
+	cmp #80
+	bcc :sta
+
+:79	lda #79
+:sta	sta x
+	jmp recalc_cursor_x
+
 csi_D 
-	rts
+* left
+
+	p1
+
+	lda x
+	and #$7f
+
+	sec
+	sbc r0
+*	bcc :0 ; underflow
+	bcs :sta
+:0	lda #0
+:sta	sta x
+	jmp recalc_cursor_x
+
+
 
 csi_f
 csi_H ; direct cursor addressing
@@ -533,7 +645,7 @@ csi_H ; direct cursor addressing
 csi_r ; scrolling region
 * based on testing
 * esc [ n r (no second parmeter) is equivalent to esc [ n ; 24 r
-* esc [ r sets scrolling region to 1 ; 24 ( in accordince with above )
+* esc [ r sets scrolling region to 1 ; 24 ( in accordance with above )
 * 24 is assumed value for second parameter
 * invalid parameters exit without updating 
 

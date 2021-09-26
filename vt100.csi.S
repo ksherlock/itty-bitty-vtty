@@ -17,6 +17,8 @@
 	ext erase_line_0,erase_line_1,erase_line_2
 	ext erase_screen_0,erase_screen_1,erase_screen_2
 
+	ext write_modem
+
 
 vt100_csi ent
 	debug vt100_csi
@@ -753,8 +755,83 @@ csi_K ; erase line
 csi_q ; LEDs
 	rts
 csi_n  ; status report
+
+	bit LOCAL
+	bmi :rts
+	lda parms
+	cmp #5
+	beq :dsr
+	cmp #6
+	beq :cpr
+:rts	rts
+:dsr ; report status
+	lda #ESC
+	jsr write_modem
+	lda #'['
+	jsr write_modem
+	lda #'0'
+	jsr write_modem
+	lda #'n'
+	jmp write_modem
+:cpr ; cursor report
+* TODO - verify and support DECOM
+	lda #ESC
+	jsr write_modem
+	lda #'['
+	lda y
+	inc
+	jsr write_digit
+	lda #';'
+	jsr write_modem
+	lda x
+	inc
+	jsr write_digit
+	lda #'R'
+	jmp write_modem
+
+
+write_digit
+* digit must be in the range 1-80
+	cmp #10
+	bcs :multi
+:0	ora #'0'
+	jmp write_modem
+:multi
+	ldx #8
+]loop	cmp :table,x
+	bcs :ok
+	dex
+	bra ]loop
+
+:ok	sec
+	sbc :table,x
+	pha ; save
+	txa
+	ora #'0'
+	jsr write_modem
+	pla
+	bra :0
+
+:table	db 0,10,20,30,40,50,60,70,80
+
 csi_c  ; what are you?
+	lda #ESC
+	jsr write_modem
+	lda #'['
+	jsr write_modem
+	lda #'?'
+	jsr write_modem
+	lda #'1'
+	jsr write_modem
+	lda #'?'
+	jsr write_modem
+	lda #'0'
+	jsr write_modem
+	lda #'c'
+	jmp write_modem
+
 csi_y  ; invoke confidence test
+* ??? 
 	rts
 
 	sav vt100.csi.L

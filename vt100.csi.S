@@ -14,6 +14,9 @@
 
 	ext reset_tab,reset_all_tabs
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
+	ext erase_line_0,erase_line_1,erase_line_2
+	ext erase_screen_0,erase_screen_1,erase_screen_2
+
 
 vt100_csi ent
 	debug vt100_csi
@@ -489,14 +492,18 @@ p1	mac
 	lda parms
 	bne ok
 	lda #1
-ok	sta r0
+ok	sta parms
 	<<<
 
 * cursor movement.
+* if private mode, no effect.
 csi_A
 * up
 
 * if cursor is outside the scrolling region, it is not locked to the scrolling region.
+
+	bit pmod
+	bmi :rts
 
 	p1
 
@@ -506,9 +513,9 @@ csi_A
 	bcc :simple
 
 	sec
-	sbc r0
+	sbc parms
 	bcc :top
-	cmp #DECTM
+	cmp DECTM
 *	bcc :top
 *	bra :sta
 	bcs :sta
@@ -521,7 +528,7 @@ csi_A
 :simple
 *	lda y
 	sec
-	sbc r0
+	sbc parms
 *	bcc :0 ; clear indicate underflow.
 	bcc :sta
 :0	lda #0
@@ -530,6 +537,10 @@ csi_A
 
 csi_B
 * down
+
+	bit pmod
+	bmi :rts
+
 	p1
 
 	lda y
@@ -538,9 +549,9 @@ csi_B
 	bge :simple
 
 	clc
-	adc r0
+	adc parms
 	bcs :bottom ; overflow
-	cmp #DECBM
+	cmp DECBM
 	bcc :sta
 
 :bottom	lda DECBM
@@ -549,7 +560,7 @@ csi_B
 
 :simple
 	clc
-	adc r0
+	adc parms
 	bcs :23 ; overflow
 	cmp #24
 	bcc :sta
@@ -560,14 +571,21 @@ csi_B
 
 csi_C
 * right
-* TODO - what happens in column 80 w/ DECAWM?
+* in column 80, no effect.
+
+	bit pmod
+	bmi :rts
+
+	lda x
+	cmp #79
+	bcs :rts
 
 	p1
 	lda x
-	and #$7f
+*	and #$7f
 
 	clc
-	adc r0
+	adc parms
 	bcs :79 ; overflow
 	cmp #80
 	bcc :sta
@@ -575,9 +593,13 @@ csi_C
 :79	lda #79
 :sta	sta x
 	jmp recalc_cursor_x
+:rts	rts
 
 csi_D 
 * left
+
+	bit pmod
+	bmi :rts
 
 	p1
 
@@ -585,13 +607,13 @@ csi_D
 	and #$7f
 
 	sec
-	sbc r0
+	sbc parms
 *	bcc :0 ; underflow
 	bcs :sta
 :0	lda #0
 :sta	sta x
 	jmp recalc_cursor_x
-
+:rts	rts
 
 
 csi_f
@@ -649,6 +671,8 @@ csi_r ; scrolling region
 * 24 is assumed value for second parameter
 * invalid parameters exit without updating 
 
+* based on testing, row parameters are not affected by DECOM.
+
 	lda parms
 	beq :p1
 	dec parms
@@ -680,20 +704,51 @@ csi_r ; scrolling region
 	beq :rts
 	bmi :rts
 
+* move cursor to origin.
 	lda parms
 	sta DECTM
 	sta y
 	lda parms+1
 	sta DECBM
 	stz x
-	jmp recalc_cursor
+	bit DECOM
+	bmi :j
+	stz y
+:j	jmp recalc_cursor
 
 :rts	rts
 
-csi_J ; erase
-	rts
-csi_K ; erase
-	rts
+csi_J ; erase screen
+
+	lda parms
+	cmp #2+1
+	bcs :rts
+	asl
+	tax
+	jmp (:table,x)
+
+:rts	rts
+
+:table
+	dw erase_screen_0
+	dw erase_screen_1
+	dw erase_screen_2
+
+csi_K ; erase line
+
+	lda parms
+	cmp #2+1
+	bcs :rts
+	asl
+	tax
+	jmp (:table,x)
+
+:rts	rts
+
+:table
+	dw erase_line_0
+	dw erase_line_1
+	dw erase_line_2
 
 csi_q ; LEDs
 	rts

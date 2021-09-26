@@ -93,10 +93,17 @@ enable_cursor ent
 cursor_vector	ent
 	jml cursor_int
 
+NumInts	equ $e01d67
+
 cursor_int
 * cursor interrupt - blink the cursor.
 
 	mx %11
+
+* check if CDA active.
+* $ff = inactive, $00 = active
+	lda >NumInts
+	bpl :rts
 
 	ldy cursor_offset
 

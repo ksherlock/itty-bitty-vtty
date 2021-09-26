@@ -77,6 +77,11 @@ erase_char	ds 2 ; clear character
 key		ds 2
 mod		ds 2
 
+
+* saved cursor
+saved_x	ds 2
+saved_y	ds 2
+
 	do *>256
 	err "too big"
 	fin

@@ -237,6 +237,7 @@ draw_char ent
 
 * x = 80 indicates next char will wrap if DECAWM. however, treated as 79 
 
+* based on testing, will not advance to column 80 unless DECAWM is enabled.
 
 	ldx x
 	cpx #79
@@ -256,7 +257,7 @@ draw_char ent
 :79
 	ldy cursor_offset
 	sta [cursor_base],y
-	lda #$80
+	lda DECAWM ; set bit 7 if DECAWM.
 	tsb x ; mark overflow
 	rts
 
@@ -603,6 +604,8 @@ erase_line_1 ent
 	clc
 	adc cursor_offset
 	tax
+
+	sep #$20 ; short m
 
 	ldy cursor_offset
 	lda cursor_base+2

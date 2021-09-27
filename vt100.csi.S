@@ -451,6 +451,12 @@ mode_LNM
 
 csi_m
 * esc [ ... m
+* 0 - attributes off
+* 1 - bold
+* 4 - underscore
+* 5 - blink
+* 7 - inverted
+
 	inc pcount
 	ldx #0
 :loop	lda parms,x
@@ -465,6 +471,12 @@ csi_m
 :next	inx
 	cpx pcount
 	blt :loop
+
+* now update - bit 7 indicates inverse.
+	lda SGR
+	and #$80
+	sta draw_inverse
+
 :rts	rts
 
 

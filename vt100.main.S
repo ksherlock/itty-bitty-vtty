@@ -15,6 +15,7 @@
 	ext disable_cursor,enable_cursor,cursor_vector
 	ext erase_screen
 	ext init_tabs
+	ext init_audio
 
 main	debug main
 
@@ -96,6 +97,7 @@ init
 	jsr erase_screen
 	jsr init_modem
 	jsr init_tabs
+	jsr init_audio
 	rts
 
 
@@ -185,7 +187,8 @@ ctrl_1f
 
 
 ctrl_07 ; ring the bell.
-	rts
+	ext beep
+	jmp beep
 
 ctrl_1b ; escape -
 * vt100 - aborts current escape sequence and starts a new one.

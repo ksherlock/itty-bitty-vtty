@@ -4,15 +4,13 @@
 	xc
 	xc
 
-	mx %11
 	use vt.equ
+	use apple2gs.equ
 	use debug
 
-	ext dispatch
+	mx %11
 
-KEYMOD		equ $c025
-KEYSTROBE	equ $c010
-KBD		equ $c000
+	ext dispatch
 
 
 kmShift		equ %0000_0001

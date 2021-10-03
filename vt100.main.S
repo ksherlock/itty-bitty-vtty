@@ -228,7 +228,7 @@ ctrl_08 ; back space
 	dec
 	sta x
 	jmp recalc_cursor_x
-:rts
+:rts	rts
 
 ctrl_09 ; tab
 * vt100 has adjustable tabs.

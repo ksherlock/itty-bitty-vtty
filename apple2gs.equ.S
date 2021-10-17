@@ -7,6 +7,10 @@ KBD		equ $c000
 VGCINT		equ $c023
 SCANINT		equ $c032
 
+RDCARDRAM	equ $c003
+RDMAINRAM	equ $c002
+WRCARDRAM	equ $c005
+WRMAINRAM	equ $c004
 
 * modem port / printer port
 
@@ -27,3 +31,4 @@ IRQ1SEC		equ $e10054
 IRQQTR		equ $e10038
 IRQVBL		equ $e10030
 IRQSND		equ $e1002c
+

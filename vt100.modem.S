@@ -14,6 +14,16 @@ SCCBDATA	equ $c03a
 SCCADATA	equ $c03b
 
 
+*
+* scc speed:
+* 
+* time constant = ( clock / (2 * clock mode * baud rate)) - 2
+* baud rate = clock / ( 2 * clock mode * (time constant + 2))
+*
+* clock mode = 1x, 16x, 32x, or 64x (selected via write register 4 bits 6/7)
+* clock = 3.6864 MHz crystal (scc runs at 14.31818 / 4 = ~ 3.58 Mhz)
+* time constant = write register 12 (low) + 13 (high)
+
 
 init_modem ent
 *	sep #$30

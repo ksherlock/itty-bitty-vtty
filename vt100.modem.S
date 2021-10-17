@@ -29,7 +29,7 @@ init_modem ent
 *	sep #$30
 * reset channel B (modem port)
 	ldx #9
-	lda #%01010001
+	lda #%01_0_1_0_0_0_1
 	stx SCCBREG
 	sta SCCBREG
 	nop
@@ -37,24 +37,28 @@ init_modem ent
 
 * x16 clock mode, 1 stop bit, no parity	
 	ldx #4
-	lda #%01000100
+	lda #%01_00_01_0_0
 	stx SCCBREG
 	sta SCCBREG
 
 * 8 bits/char, rx disabled.
 	ldx #3
-	lda #%11000000
+	lda #%11_0_0_0_0_0_0
 	stx SCCBREG
 	sta SCCBREG
 
 * 8 data bits, RTS
 	ldx #5
-	lda #%01100010
+	lda #%0_11_0_0_0_1_0
 	stx SCCBREG
 	sta SCCBREG
 
+* bit 7 = 1 for printer port, 0 for modem port.
+* 5/6 = (%10) rcv clock = br output
+* 4/3 = (%10) tx clock = br output
+
 	ldx #11
-	lda #%01010000
+	lda #%0_10_10_0_00
 	stx SCCBREG
 	sta SCCBREG
 
@@ -79,7 +83,7 @@ init_modem ent
 
 * enable baud rate generator
 	ldx #14
-	lda #%00000001
+	lda #%000_0_0_0_0_1
 	stx SCCBREG
 	sta SCCBREG
 
@@ -87,14 +91,14 @@ init_modem ent
 
 * 8 bits/char, rx enabled.
 	ldx #3
-	lda #%11000001
+	lda #%11_0_0_0_0_0_1
 	stx SCCBREG
 	sta SCCBREG
 
 
 * 8 data bits, tx enabled, RTS
 	ldx #5
-	lda #%01101010
+	lda #%0_11_0_1_0_1_0
 	stx SCCBREG
 	sta SCCBREG
 
@@ -106,7 +110,7 @@ init_modem ent
 
 * reset ext/status interrupts
 	ldx #0
-	lda #%00010000
+	lda #%00_010_0_00
 	stx SCCBREG
 	sta SCCBREG
 
@@ -122,7 +126,7 @@ init_modem ent
 
 * status, visible, master interrupts disabled
 	ldx #9
-	lda #%00010001
+	lda #%00_0_1_0_0_0_1
 	stx SCCBREG
 	sta SCCBREG
 	nop

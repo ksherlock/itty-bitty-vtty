@@ -57,7 +57,7 @@ docmode mac
 	docwait
 	bic #%01000000 ; DOC mode
 	ora #%00100000 ; auto-incr
-	ors #%0000_1111 ; max volume.
+	ora #%0000_1111 ; max volume.
 	sta SGCONTROL
 	<<<
 

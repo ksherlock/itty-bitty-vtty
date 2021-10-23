@@ -16,6 +16,7 @@
 	ext erase_screen
 	ext init_tabs
 	ext init_audio
+	ext init_cda
 
 main	debug main
 
@@ -98,6 +99,7 @@ init
 	jsr init_modem
 	jsr init_tabs
 	jsr init_audio
+	jsr init_cda
 	rts
 
 

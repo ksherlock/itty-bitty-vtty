@@ -1,4 +1,7 @@
+
+CLR80VID	equ $c00c
 SET80VID	equ $c00d
+CLRALTCHAR	equ $c00e
 SETALTCHAR	equ $c00f
 TXTSET		equ $c051
 KEYMOD		equ $c025

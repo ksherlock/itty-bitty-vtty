@@ -145,8 +145,47 @@ box
 	bpl ]loop
 
 
+	rep #$20
+
+* title
+	ldx #36
+]loop	lda :title,x
+	sta |$0480+1,x
+	dex
+	dex
+	bpl ]loop
+
+	lda #'LL'
+	ldx #36
+]loop	sta |$0500+1,x
+	dex
+	dex
+	bpl ]loop
+
+* bottom instructions
+	ldx #:instr_len-2
+]loop	lda :instr,x
+	sta |$0750+1,x
+	dex
+	dex
+	bpl ]loop
+
+
+
 	plp
 	rts
+
+:instr
+	asc " Select: ",'H'," ",'U'," ",'J'," ",'K'
+	asc "  Cancel:Esc  Save: ",'M'," "
+:instr_len equ *-:instr
+	err :instr_len&1
+
+
+:title
+	asc " Virtual Terminal "
+	ds 38-18,' ' 
+
 
 text
 	dw $0400
@@ -174,18 +213,6 @@ text
 	dw $0750
 	dw $07d0
 
-*box
-*	asc " ______________________________________ "
-*	asc da," Terminal ",'                            ',df
-*	db $da
-*	ds 38,$cc
-*	db $df
-
-
-*	asc da," Select: ",c8,df,ca,cb,"  Cancel: Esc Save: ",cd,df
-*	asc " "
-*	ds 38,$cc
-*	asc " "
 
 
 	sav vt100.cda.L

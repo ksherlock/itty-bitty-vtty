@@ -679,6 +679,7 @@ csi_H ; direct cursor addressing
 	jmp recalc_cursor
 
 csi_r ; scrolling region
+	debug csi_r
 * based on testing
 * esc [ n r (no second parmeter) is equivalent to esc [ n ; 24 r
 * esc [ r sets scrolling region to 1 ; 24 ( in accordance with above )
@@ -703,11 +704,11 @@ csi_r ; scrolling region
 :check
 * 23 max
 	ldx parms+0
-	cmp #23+1
+	cpx #23+1
 	bge :rts
 
 	ldx parms+1
-	cmp #23+1
+	cpx #23+1
 	bge :rts
 
 

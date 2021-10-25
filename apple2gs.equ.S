@@ -31,7 +31,11 @@ SGADDRH		equ $c03f	; Sound GLU address reg high
 
 * interrupt vectors.  JMP ABSLONG.
 IRQ1SEC		equ $e10054
+IRQMOUSE	equ $e10034
 IRQQTR		equ $e10038
 IRQVBL		equ $e10030
 IRQSND		equ $e1002c
+IRQSCAN		equ $e10028
+IRQSERIAL	equ $e10024
+IRQATALK	equ $e10020
 

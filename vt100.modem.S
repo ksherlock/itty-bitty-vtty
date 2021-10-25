@@ -14,6 +14,8 @@ SCCBDATA	equ $c03a
 SCCADATA	equ $c03b
 
 
+SerFlag		equ $e10104 ; 
+
 *
 * scc speed:
 * 
@@ -23,10 +25,17 @@ SCCADATA	equ $c03b
 * clock mode = 1x, 16x, 32x, or 64x (selected via write register 4 bits 6/7)
 * clock = 3.6864 MHz crystal (scc runs at 14.31818 / 4 = ~ 3.58 Mhz)
 * time constant = write register 12 (low) + 13 (high)
-
+*
+*
+* see IIgs TN #18 - Do-It-Yourself SCC Access
 
 init_modem ent
 *	sep #$30
+
+
+	stz q_head
+	stz q_tail
+
 * reset channel B (modem port)
 	ldx #9
 	lda #%01_0_1_0_0_0_1
@@ -114,9 +123,10 @@ init_modem ent
 	stx SCCBREG
 	sta SCCBREG
 
-* disable interrupts
+* enable interrupts
 	ldx #1
-	lda #0
+*	lda #0
+	lda #%0_0_0_10_0_0_0 ; inr on rx or special condition.
 	stx SCCBREG
 	sta SCCBREG
 
@@ -124,14 +134,19 @@ init_modem ent
 	lda SCCBREG
 
 
-* status, visible, master interrupts disabled
+* no vector, master interrupts enabled
 	ldx #9
-	lda #%00_0_1_0_0_0_1
+	lda #%00_0_0_1_0_1_0
 	stx SCCBREG
 	sta SCCBREG
 	nop
 	nop
 
+
+* adjust SerFlag so serial IRQs will be handled.
+	lda >SerFlag
+	ora #%00_000_111 ; channel B interrupts.
+	sta >SerFlag
 
 	rts
 
@@ -151,7 +166,7 @@ write_modem ent
 	sty SCCBDATA
 	rts
 
-read_modem ent
+read_modem_sync ent
 * c set if data read
 * v set if overrun
 	mx %11
@@ -168,6 +183,9 @@ read_modem ent
 	lda SCCBREG
 	and #%0010_0000
 	beq :ok
+* indicate overrun...
+	lda #"x"
+	sta |$07d0+20
 * clear the overrun
 	lda #$30 ; reg0, error reset.
 	sta SCCBREG
@@ -178,8 +196,97 @@ read_modem ent
 *	sta SCCBREG
 *	lda SCCBREG
 	lda SCCBDATA
+
+* debugging...
+	ldx :debug
+	sta $1e00,x
+	inc :debug
+
 	sec
 :rts	rts
 
+
+:debug	ds 2
+
+buffer equ $1d00
+
+modem_vector	ent
+	jml modem_int
+modem_int
+*
+* called in 8-bit native mode, interrupts disabled.
+* d = unknown
+* a/x/y don't need to be preserved.
+* return carry clear if handled, carry set if not.
+
+
+* check/clear overrun?
+	mx %11
+
+	phb
+	phk
+	plb
+
+	stz SCCBREG
+	lda SCCBREG
+	and #%0000_0001 ; rx ready.
+	beq :nope
+
+:read
+	lda SCCBDATA
+	ldx q_tail
+	sta buffer,x
+	inc q_tail
+
+* more?
+	stz SCCBREG
+	lda SCCBREG
+	and #%0000_0001 ; rx ready.
+	bne :read
+	clc
+	bra :finish
+
+:nope
+
+	sec
+:finish
+* reset errors.
+	lda #%00_110_000
+	stz SCCBREG
+	sta SCCBREG
+
+* reset highest ius
+	lda #%00_111_000
+	stz SCCBREG
+	sta SCCBREG
+
+	plb
+	rtl
+
+read_modem ent
+read_modem_async ent
+
+	mx %11
+
+	php
+	sei
+	ldx q_head
+	cpx q_tail
+	beq :nope
+
+	lda buffer,x
+	inc q_head
+	plp
+	sec
+	rts
+
+:nope
+	plp
+	clc
+	rts
+
+q_head	ds 2
+q_tail	ds 2
+*buffer	ds 256
 
 	sav vt100.modem.L

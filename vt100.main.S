@@ -11,9 +11,10 @@
 
 	ext scroll_down
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
-	ext write_modem,read_modem,init_modem,keypress
+	ext write_modem,read_modem,init_modem,modem_vector
+	ext keypress
 	ext disable_cursor,enable_cursor,cursor_vector
-	ext erase_screen
+	ext erase_screen,fill_screen
 	ext init_tabs
 	ext init_audio
 	ext init_cda
@@ -49,6 +50,10 @@ loop
 	bra loop
 
 init
+	mx %11
+	lda #" "
+	jsr fill_screen ; erase first to prevent flash if going 40->80 columns.
+
 	sta TXTSET
 	sta SET80VID
 	sta SETALTCHAR
@@ -72,11 +77,18 @@ init
 
 	lda #$0080
 	sta cursor_state
+
 	sei
 	lda cursor_vector
 	stal IRQ1SEC
 	lda cursor_vector+2
 	stal IRQ1SEC+2
+
+	lda modem_vector
+	stal IRQSERIAL
+	lda modem_vector+2
+	stal IRQSERIAL+2
+
 	cli
 
 	lda #0 ; clear high byte
@@ -90,12 +102,14 @@ init
 	lda #23
 	sta DECBM
 	lda #$80
-	sta LOCAL
+*	sta LOCAL
+	sta DECANM
 
-	lda #st_vt52
+*	lda #st_vt52
+	lda #st_vt100
 	sta state
 
-	jsr erase_screen
+*	jsr erase_screen
 	jsr init_modem
 	jsr init_tabs
 	jsr init_audio

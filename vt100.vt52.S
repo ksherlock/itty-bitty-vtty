@@ -82,6 +82,7 @@ esc_lt
 * (which we don't support anyhow.)
 	lda #$80
 	sta DECANM
+*	stz MOUSETEXT
 	lda #st_vt100
 	sta state
 	rts
@@ -176,10 +177,13 @@ esc_H ; cursor home
 esc_F ; enter graphics mode
 *	lda #%0010
 *	tsb mode
+	lda #$80
+*	tsb MOUSETEXT
 	rts
 esc_G ; exit graphics mode
 *	lda #%0010
 *	trb mode
+*	stz MOUSETEXT
 	rts
 
 esc_Y ; direct cursor address

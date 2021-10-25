@@ -18,6 +18,7 @@ st_vt100_csi_bad	equ 22
 
 ESC	equ $1b
 
+DPAGE	equ $1f00
 
 	dum 0
 state	ds 2

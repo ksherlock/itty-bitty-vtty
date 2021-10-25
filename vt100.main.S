@@ -11,7 +11,7 @@
 
 	ext scroll_down
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
-	ext write_modem,read_modem,init_modem,modem_vector
+	ext write_modem,read_modem,init_modem,modem_vector,reset_modem_buffer
 	ext keypress
 	ext disable_cursor,enable_cursor,cursor_vector
 	ext erase_screen,fill_screen
@@ -24,6 +24,9 @@ main	debug main
 	clc
 	xce
 	cli
+
+	pea DPAGE
+	pld
 
 	jsr init
 	jsr enable_cursor
@@ -51,6 +54,7 @@ loop
 
 init
 	mx %11
+
 	lda #" "
 	jsr fill_screen ; erase first to prevent flash if going 40->80 columns.
 
@@ -114,6 +118,68 @@ init
 	jsr init_tabs
 	jsr init_audio
 	jsr init_cda
+	rts
+
+reset	ent
+	mx %11
+	php
+
+* disable 1-sec interrupt...
+
+	lda #4
+	trb VGCINT ; disable 1-sec interrupt.
+	stz SCANINT ; reset 1-sec interrupt
+
+
+	lda #" "
+	jsr fill_screen ; erase first to prevent flash if going 40->80 columns.
+
+	rep #$30
+
+	ldx #254
+:zloop	stz 0,x
+	dex
+	dex
+	bpl :zloop
+
+	lda #$0400
+	sta cursor_base
+	lda #$01
+	sta cursor_base+2
+
+	lda #"  " ; 16-bit
+	sta erase_char
+
+
+	lda #$0080
+	sta cursor_state
+
+	lda #0 ; clear high byte
+
+	sep #$30
+
+	lda #"_"
+	sta cursor_char
+
+
+	lda #23
+	sta DECBM
+	lda #$80
+	sta DECANM
+
+	lda #st_vt100
+	sta state
+
+	jsr init_tabs
+*	jsr enable_cursor
+
+	jsr reset_modem_buffer
+
+	lda #4
+	tsb VGCINT ; enable 1-sec interrupt.
+	stz SCANINT ; reset 1-sec interrupt
+
+	plp
 	rts
 
 

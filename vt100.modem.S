@@ -32,138 +32,72 @@ SerFlag		equ $e10104 ;
 init_modem ent
 *	sep #$30
 
+	php
+	sei
 
 	stz q_head
 	stz q_tail
 
-* reset channel B (modem port)
-	ldx #9
-	lda #%01_0_1_0_0_0_1
-	stx SCCBREG
-	sta SCCBREG
-	nop
-	nop
-
-* x16 clock mode, 1 stop bit, no parity	
-	ldx #4
-	lda #%01_00_01_0_0
-	stx SCCBREG
-	sta SCCBREG
-
-* 8 bits/char, rx disabled.
-	ldx #3
-	lda #%11_0_0_0_0_0_0
-	stx SCCBREG
-	sta SCCBREG
-
-* 8 data bits, RTS
-	ldx #5
-	lda #%0_11_0_0_0_1_0
-	stx SCCBREG
-	sta SCCBREG
-
-* bit 7 = 1 for printer port, 0 for modem port.
-* 5/6 = (%10) rcv clock = br output
-* 4/3 = (%10) tx clock = br output
-
-	ldx #11
-	lda #%0_10_10_0_00
-	stx SCCBREG
-	sta SCCBREG
-
-* 9600 baud
-	ldx #12
-	lda #10
-	stx SCCBREG
-	sta SCCBREG
-
-* 9600 baud
-	ldx #13
-	lda #0
-	stx SCCBREG
-	sta SCCBREG
-
-
-* disable baud rate generator
-	ldx #14
-	lda #0
-	stx SCCBREG
-	sta SCCBREG
-
-* enable baud rate generator
-	ldx #14
-	lda #%000_0_0_0_0_1
-	stx SCCBREG
-	sta SCCBREG
-
-
-
-* 8 bits/char, rx enabled.
-	ldx #3
-	lda #%11_0_0_0_0_0_1
-	stx SCCBREG
-	sta SCCBREG
-
-
-* 8 data bits, tx enabled, RTS
-	ldx #5
-	lda #%0_11_0_1_0_1_0
-	stx SCCBREG
-	sta SCCBREG
-
-* disable interrupts
-	ldx #15
-	lda #0
-	stx SCCBREG
-	sta SCCBREG
-
-* reset ext/status interrupts
+	lda SCCBREG ; sync access
 	ldx #0
-	lda #%00_010_0_00
-	stx SCCBREG
+
+]loop
+	lda :table,x
+	bmi :done
 	sta SCCBREG
-
-* enable interrupts
-	ldx #1
-*	lda #0
-	lda #%0_0_0_10_0_0_0 ; inr on rx or special condition.
-	stx SCCBREG
+	inx
+	lda :table,x
 	sta SCCBREG
-
-* reset ch b ptr to 0?
-	lda SCCBREG
-
-
-* no vector, master interrupts enabled
-	ldx #9
-	lda #%00_0_0_1_0_1_0
-	stx SCCBREG
-	sta SCCBREG
-	nop
-	nop
-
+	inx
+	bra ]loop
+:done
 
 * adjust SerFlag so serial IRQs will be handled.
 	lda >SerFlag
 	ora #%00_000_111 ; channel B interrupts.
 	sta >SerFlag
 
+	plp
 	rts
+
+:table  ; register, value
+*	db 9,%01_0_1_0_0_0_1 ; reset channel B (modem port) - handled @ startup.
+	db 4,%01_00_01_0_0 ; x16 clock, 1 stop bit, no parity
+	db 3,%11_0_0_0_0_0_0 ; 8 bits, rx disabled
+	db 5,%0_11_0_0_0_1_0 ; 8 bits, RTS
+	db 11,%0_10_10_0_00 ; modem port, rcv/tx clock = br
+	db 12,10 ; 9600 baud (low)
+	db 13,0 ; 9600 baud (high)
+	db 14,0 ; disable baud rate generator
+	db 14,%000_0_0_0_0_1 ; enable baud rate generator
+	db 3,%11_0_0_0_0_0_1 ; 8 bits, rx enabled
+	db 5,%0_11_0_1_0_1_0 ; 8 bits, tx enabled, RTS
+	db 15,0 ; disable external interrupts
+	db 0,%00_010_0_00 ; reset ext/status interrupts
+	db 1,%0_0_0_10_0_0_0 ; interrupts on rx or special condition
+	db 9,%00_0_0_1_0_1_0 ; master interrupts enabled.
+	db -1,-1
 
 write_modem ent
 	mx %11
 * a: byte to send
 	tay ; save
 *	ldx #0
+	php
+
 
 :mask	= %0010_0100  ; tx buffer empty, clear to send
-:wait	stz SCCBREG
+:wait	
+	cli ; guard scc register access.
+	sei
+	stz SCCBREG
 	lda SCCBREG
 	and #:mask
 	cmp #:mask
 	bne :wait
 
 	sty SCCBDATA
+	plp
 	rts
 
 read_modem_sync ent
@@ -183,9 +117,7 @@ read_modem_sync ent
 	lda SCCBREG
 	and #%0010_0000
 	beq :ok
-* indicate overrun...
-	lda #"x"
-	sta |$07d0+20
+
 * clear the overrun
 	lda #$30 ; reg0, error reset.
 	sta SCCBREG
@@ -198,17 +130,13 @@ read_modem_sync ent
 	lda SCCBDATA
 
 * debugging...
-	ldx :debug
-	sta $1e00,x
-	inc :debug
+
 
 	sec
 :rts	rts
 
 
-:debug	ds 2
-
-buffer equ $1d00
+buffer equ $1e00
 
 modem_vector	ent
 	jml modem_int
@@ -219,6 +147,7 @@ modem_int
 * a/x/y don't need to be preserved.
 * return carry clear if handled, carry set if not.
 
+* doesn't access direct page.
 
 * check/clear overrun?
 	mx %11
@@ -283,6 +212,15 @@ read_modem_async ent
 :nope
 	plp
 	clc
+	rts
+
+reset_modem_buffer ent
+	mx %11
+	php
+	sei
+	stz q_head
+	stz q_tail
+	plp
 	rts
 
 q_head	ds 2

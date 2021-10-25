@@ -11,6 +11,7 @@
 
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
 	ext scroll_up,scroll_down
+	ext reset
 
 vt100_esc ent
 * #[()=>cH78DEM
@@ -206,8 +207,8 @@ esc_M ; reverse index
 :rts	rts
 
 
-esc_c ; reset terminal.
-	rts
+esc_c ; TODO - reset terminal.
+	jmp reset
 
 
 vt100_esc_bad ent
@@ -294,6 +295,7 @@ vt100_esc_rparen ent
 * SI, aka Control-O aka 0x0f set the G0 char set
 
 * not currently supported.
+* TODO - mouse text support?
 
 	ldx #st_vt100
 	stx state

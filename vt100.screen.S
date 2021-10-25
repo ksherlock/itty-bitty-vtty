@@ -100,10 +100,19 @@ cursor_int
 
 	mx %11
 
+	phb
+	phd
+	phk
+	plb
+
+
 * check if CDA active.
 * $ff = inactive, $00 = active
 	lda >NumInts
 	bpl :rts
+
+	pea DPAGE
+	pld
 
 	ldy cursor_offset
 
@@ -125,6 +134,8 @@ cursor_int
 	sta [cursor_base],y
 
 :rts	stz SCANINT ; reset 1-sec interrupt
+	pld
+	plb
 	clc
 	rtl
 

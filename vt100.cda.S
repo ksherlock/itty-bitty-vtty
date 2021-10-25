@@ -260,8 +260,7 @@ decom
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECOM
-	inc
-	jmp print_number
+	jmp print_check
 
 :str	asc "DECOM: ",00
 
@@ -299,7 +298,7 @@ decawm
 
 decscnm
 	mx %10
-	ldy #line_10+4
+	ldy #line_11+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECSCNM

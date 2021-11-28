@@ -787,12 +787,19 @@ csi_n  ; status report
 	lda #'n'
 	jmp write_modem
 :cpr ; cursor report
-* TODO - verify and support DECOM
+* returned y is in terms of DECOM.
 	lda #ESC
 	jsr write_modem
 	lda #'['
+	jsr write_modem
+
 	lda y
-	inc
+	bit DECOM
+	bpl :y
+	sec
+	sbc DECTM
+
+:y	inc
 	jsr write_digit
 	lda #';'
 	jsr write_modem

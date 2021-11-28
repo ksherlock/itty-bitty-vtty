@@ -134,21 +134,24 @@ vt100_esc ent
 
 
 esc_7 ; save cursor position, graphic rendition, and character set.
-
+* based on testing, DECOM is also saved/restored.
 	lda x
 	sta saved_x
 	lda y
 	sta saved_y
+	lda DECOM
+	sta saved_decom
 
 	rts
 esc_8 ; restore cursor position, graphic rendition, and character set.
-
-* TODO - how does this interact with DECOM?
 
 	lda saved_x
 	sta x
 	lda saved_y
 	sta y
+	lda saved_decom
+	sta DECOM
+
 	jmp recalc_cursor
 
 esc_eq ; enter alternate keypad mode

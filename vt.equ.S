@@ -82,6 +82,7 @@ mod		ds 2
 * saved cursor
 saved_x	ds 2
 saved_y	ds 2
+saved_decom ds 2
 
 	do *>256
 	err "too big"

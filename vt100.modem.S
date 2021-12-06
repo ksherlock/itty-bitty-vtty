@@ -38,6 +38,14 @@ init_modem ent
 	stz q_head
 	stz q_tail
 
+
+* zero out the buffer [for CDA debugger]
+	ldx #0
+]loop	stz buffer,x
+	inx
+	bne ]loop
+
+
 	lda SCCBREG ; sync access
 	ldx #0
 

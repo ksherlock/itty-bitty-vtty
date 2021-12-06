@@ -10,6 +10,7 @@
 
 	use apple2gs.equ
 	use vt.equ
+	use debug
 
 
 * alternate character set
@@ -46,6 +47,13 @@ Header
 	str 'Virtual Terminal'
 	adrl start
 	adrl shutdown
+* variables.
+page	ds 2
+
+
+pages	dw variables
+	dw hexdump
+	dw ssc_registers
 
 shutdown
 	mx %00
@@ -66,9 +74,17 @@ start
 	sta SETALTCHAR
 	rep #$30
 
+	stz page
 	jsr clear
 	jsr box
-	jsr content
+
+main
+
+	jsr clear_inner
+	ldx page
+	jsr (pages,x)
+*	jsr variables
+*	jsr hexdump
 
 
 :keyloop
@@ -76,9 +92,39 @@ start
 	bpl :keyloop
 	sta KEYSTROBE
 
+	and #$7f
+
+	cmp #$1b
+	beq :exit
+
+	cmp #$08 ; left
+	beq :left
+	cmp #$15
+	beq :right
+	bra :keyloop
+
+:exit
 	pld
 	plb
 	rtl
+
+:left	lda page
+	dec
+	dec
+	bpl :lok
+	lda #$04
+:lok	sta page
+	bra main
+
+:right	lda page
+	inc
+	inc
+	cmp #$04+1
+	bcc :rok
+	lda #0
+:rok	sta page
+	bra main
+
 
 
 clear
@@ -89,6 +135,23 @@ clear
 
 ]offset	equ 0
 	lup 20
+	sta |0+]offset,y
+]offset	equ ]offset+2
+	--^
+
+	dex
+	dex
+	bpl :loop
+	rts
+
+clear_inner
+* clear the inner contents.
+	ldx #16*2
+	lda #"  "
+:loop	ldy text+8,x
+
+]offset	equ 4
+	lup 16
 	sta |0+]offset,y
 ]offset	equ ]offset+2
 	--^
@@ -197,7 +260,7 @@ box
 
 
 * print variables.
-content
+variables
 	php
 	sep #$20
 	jsr decanm
@@ -209,6 +272,7 @@ content
 	jsr decawm
 	jsr decscnm
 	jsr lnm
+	jsr sgr
 	plp
 	rts
 
@@ -218,7 +282,7 @@ decanm
 	ldy #line_4+4
 	ldx #:str
 	jsr print_xy_str
-	lda DECANM
+	lda DPAGE+DECANM
 	bmi :100
 	ldx #:vt52
 	jmp print_xy_str
@@ -260,7 +324,7 @@ decom
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECOM
-	jmp print_check
+	jmp print_on_off
 
 :str	asc "DECOM: ",00
 
@@ -270,7 +334,7 @@ deckpam
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECKPAM
-	jmp print_check
+	jmp print_on_off
 
 :str	asc "DECKPAM: ",00
 
@@ -280,7 +344,7 @@ decckm
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECCKM
-	jmp print_check
+	jmp print_on_off
 
 :str	asc "DECCKM: ",00
 
@@ -291,7 +355,7 @@ decawm
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECAWM
-	jmp print_check
+	jmp print_on_off
 
 :str	asc "DECAWM: ",00
 
@@ -302,7 +366,7 @@ decscnm
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECSCNM
-	jmp print_check
+	jmp print_on_off
 
 :str	asc "DECSCNM: ",00
 
@@ -313,9 +377,21 @@ lnm
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+LNM
-	jmp print_check
+	jmp print_on_off
 
 :str	asc "LNM: ",00
+
+
+sgr
+	mx %10
+	ldy #line_12+4
+	ldx #:str
+	jsr print_xy_str
+	lda DPAGE+SGR
+	jmp print_binary
+
+
+:str	asc "SGR: ",00
 
 
 print_xy_str
@@ -329,7 +405,7 @@ print_xy_str
 :end	
 	rts
 
-print_check
+print_on_off
 	mx %10
 	bmi :set
 	ldx #:off
@@ -369,6 +445,308 @@ print_number
 	bra :0
 
 
+print_binary
+	mx %10
+*	pha
+*	lda #"%"
+*	sta |$0,y
+*	iny
+*	pla
+	lup 8
+	asl
+	pha
+	lda #0
+	adc #"0"
+	sta |$0,y
+	iny
+	pla
+	--^
+	rts
+
+print_hex
+	mx %10
+
+	xba
+	lda #0
+	xba
+	pha
+	lsr
+	lsr
+	lsr
+	lsr
+	tax
+	lda hex,x
+	sta |$0,y
+	iny
+	pla
+	and #$0f
+	tax
+	lda hex,x
+	sta |$0,y
+	iny
+	rts
+
+hexdump
+*
+* $1e00 buffer
+*
+
+:screen	equ 0
+:screen2	equ 2
+:offset	equ 4
+:ptr	equ 6
+:count	equ 8
+:row	equ 10
+:c	equ 12
+
+
+	mx %00
+	debug hexdump
+
+	php
+	lda #0
+	sep #$20
+
+	ldx #4*2
+	stx :row
+
+	ldy #0
+	sty :offset
+
+:one_row
+
+	ldx :row
+	ldy text,x
+	sty :screen
+	sty :screen2
+
+
+
+	lda #8
+	sta :count
+
+:one_byte
+
+	ldx :offset
+	lda $1e00,x
+
+	sta :c
+	lsr
+	lsr
+	lsr
+	lsr
+	tax
+	lda hex,x
+	ldy :screen
+	sta |$04,y
+	iny
+	lda :c
+	and #$0f
+	tax
+	lda hex,x
+	sta |$04,y
+	iny
+	lda #" "
+	sta |$04,y
+	iny
+	sty :screen
+
+
+* ascii
+	ldx #"."
+	lda :c
+	cmp #$20
+	blt :dot
+	cmp #$80
+	bcs :dot
+	ora #$80
+	tax
+:dot
+	txa
+	ldy :screen2
+	sta |8*3+4,y
+	iny
+	sty :screen2
+
+
+	inc :offset
+	dec :count
+	bne :one_byte
+
+
+	ldx :row
+	inx
+	inx
+	stx :row
+	cpx #20*2
+	bcc :one_row
+
+	plp
+	rts
+
+hex	asc "0123456789abcdef"
+
+
+
+ssc_registers
+	debug ssc_registers
+*
+* print SSC read registers.  read reg 8 (incoming data byte) is skipped.
+*
+*
+
+*SCCBREG		equ $c038
+*SCCAREG		equ $c039
+*SCCBDATA	equ $c03a
+*SCCADATA	equ $c03b
+
+* read everything at once.
+
+	php
+	sep #$34 ; short m/x, ints off
+	lda #0
+	xba
+*	sei
+	ldx #0
+	lda SCCBREG ; sync
+	lda SCCAREG ; sync
+
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+0
+	inx ;1
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+1
+	inx ;2 - A and B both needed.
+	stx SCCAREG
+	lda SCCAREG
+	sta ssc_data+2
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+3
+
+	inx ;3 - A only
+	stx SCCAREG
+	lda SCCAREG
+	sta ssc_data+4
+	ldx #10
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+5
+	ldx #12
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+6
+	inx ; 13
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+7
+	ldx #15
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+8
+
+	cli
+	rep #$10 ; long x
+	mx %10
+	jsr rr0
+	jsr rr1
+	jsr rr2a
+	jsr rr2b
+	jsr rr3 ; only exists in channel A.
+	jsr rr10
+	jsr rr12 ; baud low
+*	jsr rr13 ; baud high
+	jsr rr15
+	plp
+	rts
+
+ssc_data	ds 10
+
+rr0
+	mx %10
+	ldy #line_5+4
+	ldx #:str
+	jsr print_xy_str
+	lda ssc_data+0
+	jmp print_binary
+
+:str	asc "reg 0:      ",00
+
+rr1
+	mx %10
+	ldy #line_6+4
+	ldx #:str
+	jsr print_xy_str
+	lda ssc_data+1
+	jmp print_binary
+
+:str	asc "reg 1:      ",00
+
+rr2a
+	mx %10
+	ldy #line_7+4
+	ldx #:str
+	jsr print_xy_str
+	lda ssc_data+2
+	jmp print_binary
+
+:str	asc "reg 2A:     ",00
+
+rr2b
+	mx %10
+	ldy #line_8+4
+	ldx #:str
+	jsr print_xy_str
+	lda ssc_data+3
+	jmp print_binary
+
+:str	asc "reg 2B:     ",00
+
+rr3
+	mx %10
+	ldy #line_9+4
+	ldx #:str
+	jsr print_xy_str
+	lda ssc_data+4
+	jmp print_binary
+
+:str	asc "reg 3:      ",00
+
+rr10
+	mx %10
+	ldy #line_10+4
+	ldx #:str
+	jsr print_xy_str
+	lda ssc_data+5
+	jmp print_binary
+
+:str	asc "reg 10:     ",00
+
+* 12/13 are baud
+
+rr12
+	mx %10
+	ldy #line_11+4
+	ldx #:str
+	jsr print_xy_str
+	lda ssc_data+7
+	jsr print_hex
+	lda ssc_data+6
+	jmp print_hex
+
+:str	asc "reg 12/13:  ",00
+
+rr15
+	mx %10
+	ldy #line_12+4
+	ldx #:str
+	jsr print_xy_str
+	lda ssc_data+8
+	jmp print_binary
+
+:str	asc "reg 15:     ",00
 
 text
 	dw $0400

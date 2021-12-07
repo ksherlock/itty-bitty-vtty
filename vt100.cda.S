@@ -290,7 +290,7 @@ decanm
 :100	ldx #:vt100
 	jmp print_xy_str
 
-:str	asc "DECANM: ",00
+:str	asc "DECANM:  ",00
 :vt100	asc "vt100",00
 :vt52	asc "vt52",00
 
@@ -304,7 +304,7 @@ dectm
 	inc
 	jmp print_number
 
-:str	asc "DECTM: ",00
+:str	asc "DECTM:   ",00
 
 decbm
 	mx %10
@@ -315,7 +315,7 @@ decbm
 	inc
 	jmp print_number
 
-:str	asc "DECBM: ",00
+:str	asc "DECBM:   ",00
 
 
 decom
@@ -326,7 +326,7 @@ decom
 	lda DPAGE+DECOM
 	jmp print_on_off
 
-:str	asc "DECOM: ",00
+:str	asc "DECOM:   ",00
 
 deckpam
 	mx %10
@@ -346,7 +346,7 @@ decckm
 	lda DPAGE+DECCKM
 	jmp print_on_off
 
-:str	asc "DECCKM: ",00
+:str	asc "DECCKM:  ",00
 
 
 decawm
@@ -357,7 +357,7 @@ decawm
 	lda DPAGE+DECAWM
 	jmp print_on_off
 
-:str	asc "DECAWM: ",00
+:str	asc "DECAWM:  ",00
 
 
 decscnm
@@ -379,19 +379,19 @@ lnm
 	lda DPAGE+LNM
 	jmp print_on_off
 
-:str	asc "LNM: ",00
+:str	asc "LNM:     ",00
 
 
 sgr
 	mx %10
-	ldy #line_12+4
+	ldy #line_13+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+SGR
 	jmp print_binary
 
 
-:str	asc "SGR: ",00
+:str	asc "SGR:     ",00
 
 
 print_xy_str
@@ -608,17 +608,18 @@ ssc_registers
 	xba
 *	sei
 	ldx #0
-	lda SCCBREG ; sync
 	lda SCCAREG ; sync
+	lda SCCBREG ; sync
 
-	stx SCCBREG
-	lda SCCBREG
+	stx SCCAREG
+	lda SCCAREG
 	sta ssc_data+0
-	inx ;1
 	stx SCCBREG
 	lda SCCBREG
 	sta ssc_data+1
-	inx ;2 - A and B both needed.
+
+	inx ;1
+
 	stx SCCAREG
 	lda SCCAREG
 	sta ssc_data+2
@@ -626,34 +627,69 @@ ssc_registers
 	lda SCCBREG
 	sta ssc_data+3
 
-	inx ;3 - A only
+	inx ;2
+
 	stx SCCAREG
 	lda SCCAREG
 	sta ssc_data+4
-	ldx #10
 	stx SCCBREG
 	lda SCCBREG
 	sta ssc_data+5
-	ldx #12
-	stx SCCBREG
-	lda SCCBREG
+
+	inx ;3
+
+	stx SCCAREG
+	lda SCCAREG
 	sta ssc_data+6
-	inx ; 13
 	stx SCCBREG
 	lda SCCBREG
 	sta ssc_data+7
-	ldx #15
+
+
+	ldx #10 ; 10
+
+	stx SCCAREG
+	lda SCCAREG
+	sta ssc_data+8
 	stx SCCBREG
 	lda SCCBREG
-	sta ssc_data+8
+	sta ssc_data+9
+
+
+	ldx #12 ; 12
+
+	stx SCCAREG
+	lda SCCAREG
+	sta ssc_data+10
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+11
+
+	inx ; 13
+
+	stx SCCAREG
+	lda SCCAREG
+	sta ssc_data+12
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+13
+
+	ldx #15 ; 15
+
+	stx SCCAREG
+	lda SCCAREG
+	sta ssc_data+14
+	stx SCCBREG
+	lda SCCBREG
+	sta ssc_data+15
+
 
 	cli
 	rep #$10 ; long x
 	mx %10
 	jsr rr0
 	jsr rr1
-	jsr rr2a
-	jsr rr2b
+	jsr rr2
 	jsr rr3 ; only exists in channel A.
 	jsr rr10
 	jsr rr12 ; baud low
@@ -662,7 +698,7 @@ ssc_registers
 	plp
 	rts
 
-ssc_data	ds 10
+ssc_data	ds 16
 
 rr0
 	mx %10
@@ -670,83 +706,122 @@ rr0
 	ldx #:str
 	jsr print_xy_str
 	lda ssc_data+0
+	jsr print_binary
+	iny
+	iny
+	lda ssc_data+1
 	jmp print_binary
 
-:str	asc "reg 0:      ",00
+:str	asc "RR 0:  ",00
 
 rr1
 	mx %10
 	ldy #line_6+4
 	ldx #:str
 	jsr print_xy_str
-	lda ssc_data+1
+	lda ssc_data+2
+	jsr print_binary
+	iny
+	iny
+	lda ssc_data+3
 	jmp print_binary
 
-:str	asc "reg 1:      ",00
+:str	asc "RR 1:  ",00
 
-rr2a
+rr2
 	mx %10
 	ldy #line_7+4
 	ldx #:str
 	jsr print_xy_str
-	lda ssc_data+2
+	lda ssc_data+4
+	jsr print_binary
+	iny
+	iny
+	lda ssc_data+5
 	jmp print_binary
 
-:str	asc "reg 2A:     ",00
+:str	asc "RR 2:  ",00
 
-rr2b
+rr3
 	mx %10
 	ldy #line_8+4
 	ldx #:str
 	jsr print_xy_str
-	lda ssc_data+3
+	lda ssc_data+6
+	jsr print_binary
+	iny
+	iny
+	lda ssc_data+7
 	jmp print_binary
 
-:str	asc "reg 2B:     ",00
+:str	asc "RR 3:  ",00
 
-rr3
+rr10
 	mx %10
 	ldy #line_9+4
 	ldx #:str
 	jsr print_xy_str
-	lda ssc_data+4
+	lda ssc_data+8
+	jsr print_binary
+	iny
+	iny
+	lda ssc_data+9
 	jmp print_binary
 
-:str	asc "reg 3:      ",00
-
-rr10
-	mx %10
-	ldy #line_10+4
-	ldx #:str
-	jsr print_xy_str
-	lda ssc_data+5
-	jmp print_binary
-
-:str	asc "reg 10:     ",00
+:str	asc "RR 10: ",00
 
 * 12/13 are baud
 
 rr12
 	mx %10
-	ldy #line_11+4
+	ldy #line_10+4
 	ldx #:str
 	jsr print_xy_str
-	lda ssc_data+7
+
+	iny
+	iny
+	iny
+	iny
+
+	lda ssc_data+12
 	jsr print_hex
-	lda ssc_data+6
+	lda ssc_data+10
+	jsr print_hex
+
+	iny
+	iny
+	iny
+	iny
+	iny
+	iny
+
+	lda ssc_data+13
+	jsr print_hex
+	lda ssc_data+11
 	jmp print_hex
 
-:str	asc "reg 12/13:  ",00
+
+:str	asc "RR 12: ",00
+
 
 rr15
 	mx %10
-	ldy #line_12+4
+	ldy #line_11+4
 	ldx #:str
 	jsr print_xy_str
-	lda ssc_data+8
+
+	lda ssc_data+14
+	jsr print_binary
+	iny
+	iny
+	lda ssc_data+15
 	jmp print_binary
 
-:str	asc "reg 15:     ",00
+:str	asc "RR 15: ",00
+
+
+
+
 
 text
 	dw $0400

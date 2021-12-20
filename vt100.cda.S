@@ -417,33 +417,63 @@ print_on_off
 :off	asc "off",00
 
 print_number
+	debug print_number
+*
+* print a base-10 number, 0-255
+* a = #
 	mx %10
-	cmp #20
-	bcs :2
+
+
+	ldx #0
+
+:100
+	cmp #100
+	bcc :10x
+	inx
+*	sec
+	sbc #100
+	bra :100
+
+:10x
+	cpx #0
+	beq :10
+
+	pha
+	txa
+*	clc
+*	adc #"0"
+	ora #"0"
+	sta |$0,y
+	iny
+	pla
+	ldx #0
+
+:10
 	cmp #10
-	bcs :1
-:0	ora #"0"
+	bcc :1x
+	inx
+	sbc #10
+	bra :10
+
+:1x
+	cpx #0
+	beq :1
+	pha
+	txa
+*	clc
+*	adc #"0"
+	ora #"0"
+	sta |$0,y
+	iny
+	pla
+
+:1
+*	clc
+*	adc #"0"
+	ora #"0"
 	sta |$0,y
 	iny
 	rts
-
-:2	pha
-	lda #"2"
-	sta |$0,y
-	iny
-	pla
-	sec
-	sbc #20
-	bra :0
-:1	pha
-	lda #"1"
-	sta |$0,y
-	iny
-	pla
-	sec
-	sbc #10
-	bra :0
-
 
 print_binary
 	mx %10

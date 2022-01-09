@@ -6,7 +6,7 @@
 
 	mx %11
 	cas se
-*	use vt.equ
+	use vt.equ
 
 SCCBREG		equ $c038
 SCCAREG		equ $c039
@@ -35,13 +35,15 @@ init_modem ent
 	php
 	sei
 
-	stz q_head
-	stz q_tail
+	stz read_q_head
+	stz read_q_tail
+	stz write_q_head
+	stz write_q_tail
 
 
 * zero out the buffer [for CDA debugger]
 	ldx #0
-]loop	stz buffer,x
+]loop	stz read_buffer,x
 	inx
 	bne ]loop
 
@@ -144,7 +146,7 @@ read_modem_sync ent
 :rts	rts
 
 
-buffer equ $1e00
+read_buffer equ $1e00
 
 modem_vector	ent
 	jml modem_int
@@ -171,9 +173,9 @@ modem_int
 
 :read
 	lda SCCBDATA
-	ldx q_tail
-	sta buffer,x
-	inc q_tail
+	ldx DPAGE+read_q_tail
+	sta read_buffer,x
+	inc DPAGE+read_q_tail
 
 * more?
 	stz SCCBREG
@@ -207,12 +209,12 @@ read_modem_async ent
 
 	php
 	sei
-	ldx q_head
-	cpx q_tail
+	ldx read_q_head
+	cpx read_q_tail
 	beq :nope
 
-	lda buffer,x
-	inc q_head
+	lda read_buffer,x
+	inc read_q_head
 	plp
 	sec
 	rts
@@ -226,13 +228,15 @@ reset_modem_buffer ent
 	mx %11
 	php
 	sei
-	stz q_head
-	stz q_tail
+
+	stz read_q_head
+	stz read_q_tail
+	stz write_q_head
+	stz write_q_tail
+
 	plp
 	rts
 
-q_head	ds 2
-q_tail	ds 2
 *buffer	ds 256
 
 	sav vt100.modem.L

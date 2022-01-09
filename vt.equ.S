@@ -84,6 +84,14 @@ saved_x	ds 2
 saved_y	ds 2
 saved_decom ds 2
 
+
+* async read/write pointers.
+*
+read_q_head	ds 2
+read_q_tail	ds 2
+write_q_head	ds 2
+write_q_tail	ds 2
+
 	do *>256
 	err "too big"
 	fin

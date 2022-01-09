@@ -535,13 +535,20 @@ hexdump
 
 	php
 	lda #0
+
+	stz :offset
+
 	sep #$20
 
 	ldx #4*2
 	stx :row
 
-	ldy #0
-	sty :offset
+	lda DPAGE+read_q_tail
+	sec
+	sbc #8*16
+	sta :offset
+
+
 
 :one_row
 

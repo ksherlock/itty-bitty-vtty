@@ -37,7 +37,6 @@ main	debug main
 	stz SCANINT ; reset 1-sec interrupt
 
 
-
 loop
 	bit LOCAL
 	bmi :kb
@@ -49,6 +48,13 @@ loop
 	jsr vt100
 :kb	
 	jsr keypress
+
+*
+* if there is pending modem data, don't re-enable the cursor yet.
+* 
+	lda read_q_head
+	cmp read_q_tail
+	bne loop
 	jsr enable_cursor
 	bra loop
 

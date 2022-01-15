@@ -51,6 +51,7 @@ Header
 page	ds 2
 
 
+MAX_PAGE	equ 8
 pages	dw variables
 	dw hexdump_r
 	dw hexdump_w
@@ -112,14 +113,14 @@ main
 	dec
 	dec
 	bpl :lok
-	lda #$05
+	lda #MAX_PAGE-2
 :lok	sta page
 	bra main
 
 :right	lda page
 	inc
 	inc
-	cmp #$05+1
+	cmp #MAX_PAGE
 	bcc :rok
 	lda #0
 :rok	sta page

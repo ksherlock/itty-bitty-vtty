@@ -11,7 +11,7 @@
 
 	ext scroll_down
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
-	ext write_modem,read_modem,init_modem,modem_vector,reset_modem_buffer
+	ext modem_io,init_modem,modem_vector,reset_modem_buffer
 	ext keypress
 	ext disable_cursor,enable_cursor,cursor_vector
 	ext erase_screen,fill_screen
@@ -38,23 +38,16 @@ main	debug main
 
 
 loop
-	bit LOCAL
-	bmi :kb
-	jsr read_modem
-	bcc :kb
+	jsr keypress ; check for a keypress, write data to out buffer.
+	jsr modem_io ; 
+	bcc :nope
 	pha
 	jsr disable_cursor
 	pla
 	jsr vt100
-:kb	
-	jsr keypress
+	bra loop
 
-*
-* if there is pending modem data, don't re-enable the cursor yet.
-* 
-	lda read_q_head
-	cmp read_q_tail
-	bne loop
+:nope	; no modem data, re-enable the cursor.
 	jsr enable_cursor
 	bra loop
 
@@ -189,16 +182,16 @@ reset	ent
 	rts
 
 
-dispatch ent
-	mx %11
-* a = character to xmit
-	bit LOCAL
-	bmi :local
-	jmp write_modem
-:local
-	pha
-	jsr disable_cursor
-	pla
+*dispatch ent
+*	mx %11
+** a = character to xmit
+*	bit LOCAL
+*	bmi :local
+*	jmp write_modem
+*:local
+*	pha
+*	jsr disable_cursor
+*	pla
 
 * fall through
 

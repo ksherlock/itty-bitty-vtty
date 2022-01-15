@@ -7,6 +7,7 @@
 	mx %11
 	cas se
 	use vt.equ
+	use debug
 
 SCCBREG		equ $c038
 SCCAREG		equ $c039
@@ -88,7 +89,7 @@ init_modem ent
 	db 9,%00_0_0_1_0_1_0 ; master interrupts enabled.
 	db -1,-1
 
-write_modem ent
+write_modem_sync ent
 	mx %11
 * a: byte to send
 	tay ; save
@@ -109,6 +110,7 @@ write_modem ent
 	sty SCCBDATA
 	plp
 	rts
+
 
 read_modem_sync ent
 * c set if data read
@@ -146,6 +148,7 @@ read_modem_sync ent
 :rts	rts
 
 
+write_buffer equ $1d00
 read_buffer equ $1e00
 
 modem_vector	ent
@@ -201,6 +204,123 @@ modem_int
 
 	plb
 	rtl
+
+
+
+modem_io ent
+	debug modem_io
+
+	mx %11
+	php
+	sei
+	bit LOCAL
+	bmi :local
+
+:write
+* send any outbound data...
+
+:mask	= %0010_0100  ; tx buffer empty, clear to send
+	ldx write_q_tail
+	cpx write_q_head
+	beq :read
+
+	lda SCCBREG ; sync
+	stz SCCBREG
+	lda SCCBREG
+	and #:mask
+	cmp #:mask
+	bne :read
+
+*	ldx write_q_tail
+	lda write_buffer,x
+	sta SCCBDATA
+	inc write_q_tail
+:read
+	ldx read_q_tail
+	cpx read_q_head
+	beq :nope
+	lda read_buffer,x
+	inc read_q_tail
+	plp
+	sec
+	rts
+
+:nope
+	plp
+	clc
+	rts
+	
+
+:local
+	ldx write_q_tail
+	cpx write_q_head
+	beq :nope
+	lda write_buffer,x
+	inc write_q_tail
+	plp
+	sec
+	rts
+
+
+
+write_modem ent
+write_modem_async ent
+
+	mx %11
+	php
+	sei
+
+*	bit LOCAL
+*	bmi :local
+
+	ldx write_q_head
+	sta write_buffer,x
+	inc write_q_head
+	plp
+	rts
+*:local
+*	ldx read_q_head
+*	sta read_buffer,x
+*	inc read_q_head
+*	plp
+*	rts
+
+
+write_modem_str ent
+
+; y = address of string (0-terminated)
+; inc write_q_head vs inx
+; because it wraps at $ff
+
+	mx %10
+	php
+	sei
+*	bit LOCAL
+*	bmi :local
+
+:loop	lda |$0000,y
+	beq :fini
+	ldx write_q_head
+	sta write_buffer,x
+	inc write_q_head
+	iny
+	bra :loop
+
+*:local	lda |$0000,y
+*	beq :fini
+*	ldx read_q_head
+*	sta read_buffer,x
+*	inc read_q_head
+*	iny
+*	bra :local
+
+
+:fini
+	plp
+	rts
+
+
+
 
 read_modem ent
 read_modem_async ent

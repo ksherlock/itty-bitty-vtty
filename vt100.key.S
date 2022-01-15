@@ -10,7 +10,8 @@
 
 	mx %11
 
-	ext dispatch
+*	ext dispatch
+	ext write_modem
 
 
 kmShift		equ %0000_0001
@@ -21,6 +22,9 @@ kmKeypad	equ %0001_0000
 kmUpdateMod	equ %0010_0000
 kmOption	equ %0100_0000
 kmCommand	equ %1000_0000
+
+dispatch
+	jmp write_modem
 
 keypress ent
 	debug keypress

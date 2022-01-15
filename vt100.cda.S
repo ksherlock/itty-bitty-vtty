@@ -52,7 +52,8 @@ page	ds 2
 
 
 pages	dw variables
-	dw hexdump
+	dw hexdump_r
+	dw hexdump_w
 	dw ssc_registers
 
 shutdown
@@ -83,8 +84,7 @@ main
 	jsr clear_inner
 	ldx page
 	jsr (pages,x)
-*	jsr variables
-*	jsr hexdump
+
 
 
 :keyloop
@@ -112,14 +112,14 @@ main
 	dec
 	dec
 	bpl :lok
-	lda #$04
+	lda #$05
 :lok	sta page
 	bra main
 
 :right	lda page
 	inc
 	inc
-	cmp #$04+1
+	cmp #$05+1
 	bcc :rok
 	lda #0
 :rok	sta page
@@ -263,6 +263,7 @@ box
 variables
 	php
 	sep #$20
+	jsr local
 	jsr decanm
 	jsr dectm
 	jsr decbm
@@ -276,10 +277,19 @@ variables
 	plp
 	rts
 
+local
+	mx %10
+	ldy #line_4+4
+	ldx #:str
+	jsr print_xy_str
+	lda DPAGE+LOCAL
+	jmp print_on_off
+
+:str	asc "LOCAL:   ",00
 
 decanm
 	mx %10
-	ldy #line_4+4
+	ldy #line_5+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECANM
@@ -297,7 +307,7 @@ decanm
 
 dectm
 	mx %10
-	ldy #line_5+4
+	ldy #line_6+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECTM
@@ -308,7 +318,7 @@ dectm
 
 decbm
 	mx %10
-	ldy #line_6+4
+	ldy #line_7+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECBM
@@ -320,7 +330,7 @@ decbm
 
 decom
 	mx %10
-	ldy #line_7+4
+	ldy #line_8+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECOM
@@ -330,7 +340,7 @@ decom
 
 deckpam
 	mx %10
-	ldy #line_8+4
+	ldy #line_9+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECKPAM
@@ -340,7 +350,7 @@ deckpam
 
 decckm
 	mx %10
-	ldy #line_9+4
+	ldy #line_10+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECCKM
@@ -351,7 +361,7 @@ decckm
 
 decawm
 	mx %10
-	ldy #line_10+4
+	ldy #line_11+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECAWM
@@ -362,7 +372,7 @@ decawm
 
 decscnm
 	mx %10
-	ldy #line_11+4
+	ldy #line_12+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECSCNM
@@ -373,7 +383,7 @@ decscnm
 
 lnm
 	mx %10
-	ldy #line_12+4
+	ldy #line_13+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+LNM
@@ -384,7 +394,7 @@ lnm
 
 sgr
 	mx %10
-	ldy #line_13+4
+	ldy #line_14+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+SGR
@@ -516,7 +526,8 @@ print_hex
 	iny
 	rts
 
-hexdump
+
+hexdump_r
 *
 * $1e00 buffer
 *
@@ -528,7 +539,7 @@ hexdump
 :count	equ 8
 :row	equ 10
 :c	equ 12
-
+:ptr	equ 14
 
 	mx %00
 	debug hexdump
@@ -620,6 +631,113 @@ hexdump
 
 	plp
 	rts
+
+
+hexdump_w
+*
+* $1d00 buffer
+*
+
+:screen	equ 0
+:screen2	equ 2
+:offset	equ 4
+:ptr	equ 6
+:count	equ 8
+:row	equ 10
+:c	equ 12
+:ptr	equ 14
+
+	mx %00
+	debug hexdump
+
+	php
+	lda #0
+
+	stz :offset
+
+	sep #$20
+
+	ldx #4*2
+	stx :row
+
+	lda DPAGE+write_q_tail
+	sec
+	sbc #8*16
+	sta :offset
+
+
+
+:one_row
+
+	ldx :row
+	ldy text,x
+	sty :screen
+	sty :screen2
+
+
+
+	lda #8
+	sta :count
+
+:one_byte
+
+	ldx :offset
+	lda $1d00,x
+
+	sta :c
+	lsr
+	lsr
+	lsr
+	lsr
+	tax
+	lda hex,x
+	ldy :screen
+	sta |$04,y
+	iny
+	lda :c
+	and #$0f
+	tax
+	lda hex,x
+	sta |$04,y
+	iny
+	lda #" "
+	sta |$04,y
+	iny
+	sty :screen
+
+
+* ascii
+	ldx #"."
+	lda :c
+	cmp #$20
+	blt :dot
+	cmp #$80
+	bcs :dot
+	ora #$80
+	tax
+:dot
+	txa
+	ldy :screen2
+	sta |8*3+4,y
+	iny
+	sty :screen2
+
+
+	inc :offset
+	dec :count
+	bne :one_byte
+
+
+	ldx :row
+	inx
+	inx
+	stx :row
+	cpx #20*2
+	bcc :one_row
+
+	plp
+	rts
+
 
 hex	asc "0123456789abcdef"
 

@@ -473,8 +473,11 @@ csi_m
 	blt :loop
 
 * now update - bit 7 indicates inverse.
+	stz draw_inverse
 	lda SGR
-	and #$80
+	beq :rts
+	lda #$80
+*	and #$80
 	sta draw_inverse
 
 :rts	rts

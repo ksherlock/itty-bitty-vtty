@@ -169,6 +169,7 @@ modem_int
 	phk
 	plb
 
+	lda SCCBREG ; sync
 	stz SCCBREG
 	lda SCCBREG
 	and #%0000_0001 ; rx ready.
@@ -176,9 +177,9 @@ modem_int
 
 :read
 	lda SCCBDATA
-	ldx DPAGE+read_q_tail
+	ldx DPAGE+read_q_head
 	sta read_buffer,x
-	inc DPAGE+read_q_tail
+	inc DPAGE+read_q_head
 
 * more?
 	stz SCCBREG
@@ -329,12 +330,12 @@ read_modem_async ent
 
 	php
 	sei
-	ldx read_q_head
-	cpx read_q_tail
+	ldx read_q_tail
+	cpx read_q_head
 	beq :nope
 
 	lda read_buffer,x
-	inc read_q_head
+	inc read_q_tail
 	plp
 	sec
 	rts

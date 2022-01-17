@@ -533,139 +533,59 @@ hexdump_r
 * $1e00 buffer
 *
 
-:screen	equ 0
-:screen2	equ 2
-:offset	equ 4
-:ptr	equ 6
-:count	equ 8
-:row	equ 10
-:c	equ 12
-:ptr	equ 14
-
 	mx %00
-	debug hexdump
-
-	php
-	lda #0
-
-	stz :offset
-
-	sep #$20
-
-	ldx #4*2
-	stx :row
 
 	lda DPAGE+read_q_tail
 	sec
 	sbc #8*16
-	sta :offset
-
-
-
-:one_row
-
-	ldx :row
-	ldy text,x
-	sty :screen
-	sty :screen2
-
-
-
-	lda #8
-	sta :count
-
-:one_byte
-
-	ldx :offset
-	lda $1e00,x
-
-	sta :c
-	lsr
-	lsr
-	lsr
-	lsr
-	tax
-	lda hex,x
-	ldy :screen
-	sta |$04,y
-	iny
-	lda :c
-	and #$0f
-	tax
-	lda hex,x
-	sta |$04,y
-	iny
-	lda #" "
-	sta |$04,y
-	iny
-	sty :screen
-
-
-* ascii
-	ldx #"."
-	lda :c
-	cmp #$20
-	blt :dot
-	cmp #$80
-	bcs :dot
-	ora #$80
-	tax
-:dot
-	txa
-	ldy :screen2
-	sta |8*3+4,y
-	iny
-	sty :screen2
-
-
-	inc :offset
-	dec :count
-	bne :one_byte
-
-
-	ldx :row
-	inx
-	inx
-	stx :row
-	cpx #20*2
-	bcc :one_row
-
-	plp
-	rts
+	and #$00ff
+	ora #$1e00
+	jmp hexdump_common
 
 
 hexdump_w
 *
 * $1d00 buffer
 *
+	mx %00
+
+
+	lda DPAGE+write_q_tail
+	sec
+	sbc #8*16
+	and #$00ff
+	ora #$1d00
+	jmp hexdump_common
+
+
+hexdump_common
+*
+* a = address to start.
+
+
 
 :screen	equ 0
 :screen2	equ 2
-:offset	equ 4
+*:offset	equ 4
 :ptr	equ 6
 :count	equ 8
 :row	equ 10
 :c	equ 12
-:ptr	equ 14
 
 	mx %00
 	debug hexdump
 
+
 	php
+	sta :ptr
 	lda #0
 
-	stz :offset
+*	stz :offset
 
 	sep #$20
 
 	ldx #4*2
 	stx :row
-
-	lda DPAGE+write_q_tail
-	sec
-	sbc #8*16
-	sta :offset
-
 
 
 :one_row
@@ -682,8 +602,8 @@ hexdump_w
 
 :one_byte
 
-	ldx :offset
-	lda $1d00,x
+	lda (:ptr)
+	inc :ptr
 
 	sta :c
 	lsr
@@ -724,7 +644,6 @@ hexdump_w
 	sty :screen2
 
 
-	inc :offset
 	dec :count
 	bne :one_byte
 

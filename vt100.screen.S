@@ -236,16 +236,20 @@ draw_char ent
 	bpl :normal
 ; invert it.
 	cmp #$60 ; `, first lowercase
-	bge :draw ; nothing to do for lowercase
+	bge draw_char_raw ; nothing to do for lowercase
 	cmp #$40 ; @, first uppercase
-	bcc :draw ; nothing to do for special
+	bcc draw_char_raw ; nothing to do for special
 
 :uc	and #%10111111 ; ~ $40
-	bra :draw
+	bra draw_char_raw
 
 
 :normal	ora #$80
-:draw
+
+draw_char_raw ent
+* entry point for writing character to screen w/o processing it
+
+
 *	sta cursor_saved_char
 
 * with DECAWM, x = 79, will CR LF (with scroll) before drawing character.
@@ -278,8 +282,6 @@ draw_char ent
 	lda DECAWM ; set bit 7 if DECAWM.
 	tsb x ; mark overflow
 	rts
-
-
 
 
 :wrap

@@ -214,7 +214,7 @@ vt100
 	ext vt100_esc,vt100_csi,vt100_csi_2
 	ext vt100_esc_pound,vt100_esc_lparen,vt100_esc_rparen
 	ext vt100_esc_bad,vt100_csi_bad
-	ext draw_char
+	ext draw_char,draw_char_raw
 
 	dw draw_char
 	dw vt52_esc
@@ -290,7 +290,16 @@ ctrl_18
 ctrl_1a
 * vt100 - abort current escape sequence
 * and display error character.
-* TODO - display error character (mouse text)
+*
+* based on testing, this applies to vt52 and vt100;
+* cancel character is drawn regardless of current state.
+
+	lda x
+	and #$1
+	ora #$56 ; $56 or $57
+*	lda #$57
+	jsr draw_char_raw
+
 	bit DECANM
 	bpl :vt52
 	lda #st_vt100

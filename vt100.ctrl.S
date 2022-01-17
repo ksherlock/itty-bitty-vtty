@@ -109,8 +109,11 @@ xoff
 	rts
 can
 sub
+	ext draw_char_raw
 * cancel esc sequence and display error character
 	stz state
+	lda #$57 ; mouse text block
+	jmp draw_char_raw
 	rts
 
 esc

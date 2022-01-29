@@ -266,15 +266,18 @@ variables
 	sep #$20
 	jsr local
 	jsr decanm
-	jsr dectm
-	jsr decbm
 	jsr decom
 	jsr deckpam
 	jsr decckm
 	jsr decawm
+	jsr decarm
 	jsr decscnm
 	jsr lnm
 	jsr sgr
+	jsr dectm
+	jsr decbm
+	jsr decx
+	jsr decy
 	plp
 	rts
 
@@ -306,32 +309,10 @@ decanm
 :vt52	asc "vt52",00
 
 
-dectm
-	mx %10
-	ldy #line_6+4
-	ldx #:str
-	jsr print_xy_str
-	lda DPAGE+DECTM
-	inc
-	jmp print_number
-
-:str	asc "DECTM:   ",00
-
-decbm
-	mx %10
-	ldy #line_7+4
-	ldx #:str
-	jsr print_xy_str
-	lda DPAGE+DECBM
-	inc
-	jmp print_number
-
-:str	asc "DECBM:   ",00
-
 
 decom
 	mx %10
-	ldy #line_8+4
+	ldy #line_6+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECOM
@@ -341,7 +322,7 @@ decom
 
 deckpam
 	mx %10
-	ldy #line_9+4
+	ldy #line_7+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECKPAM
@@ -351,7 +332,7 @@ deckpam
 
 decckm
 	mx %10
-	ldy #line_10+4
+	ldy #line_8+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECCKM
@@ -362,7 +343,7 @@ decckm
 
 decawm
 	mx %10
-	ldy #line_11+4
+	ldy #line_9+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECAWM
@@ -370,10 +351,19 @@ decawm
 
 :str	asc "DECAWM:  ",00
 
+decarm
+	mx %10
+	ldy #line_10+4
+	ldx #:str
+	jsr print_xy_str
+	lda DPAGE+DECARM
+	jmp print_on_off
+
+:str	asc "DECARM:  ",00
 
 decscnm
 	mx %10
-	ldy #line_12+4
+	ldy #line_11+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECSCNM
@@ -384,7 +374,7 @@ decscnm
 
 lnm
 	mx %10
-	ldy #line_13+4
+	ldy #line_12+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+LNM
@@ -395,14 +385,60 @@ lnm
 
 sgr
 	mx %10
-	ldy #line_14+4
+	ldy #line_13+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+SGR
 	jmp print_binary
 
-
 :str	asc "SGR:     ",00
+
+
+dectm
+	mx %10
+	ldy #line_14+4
+	ldx #:str
+	jsr print_xy_str
+	lda DPAGE+DECTM
+	inc
+	jmp print_number
+
+:str	asc "DECTM:   ",00
+
+decbm
+	mx %10
+	ldy #line_15+4
+	ldx #:str
+	jsr print_xy_str
+	lda DPAGE+DECBM
+	inc
+	jmp print_number
+
+:str	asc "DECBM:   ",00
+
+
+decx
+	mx %10
+	ldy #line_16+4
+	ldx #:str
+	jsr print_xy_str
+	lda DPAGE+x
+	and #$7f
+	inc
+	jmp print_number
+
+:str	asc "X:       ",00
+
+decy
+	mx %10
+	ldy #line_17+4
+	ldx #:str
+	jsr print_xy_str
+	lda DPAGE+y
+	inc
+	jmp print_number
+
+:str	asc "Y:       ",00
 
 
 print_xy_str

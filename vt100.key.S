@@ -38,7 +38,7 @@ keypress ent
 	sta mod
 	sta KEYSTROBE
 	bit #kmOption!kmCommand
-	bne :command
+	bne command
 
 	bit #kmKeypad
 	bne keypad
@@ -68,8 +68,45 @@ keypress ent
 	lda #$08
 :send	jmp dispatch
 
-:command ; or option
-	rts
+command ; or option
+
+* apple-return -> linefeed
+* apple-backspace -> delete
+	
+
+	lda key
+	cmp #$7f
+	beq :bs
+	cmp #$0d
+	beq :lf
+
+	cmp #:MIN
+	blt :rts
+	cmp #:MAX+1
+	bcs :rts
+	sec
+	sbc #:MIN
+	asl
+	tax
+	jmp (:table,x)
+
+:rts	rts
+
+
+:MIN	equ 49
+:MAX	equ 52
+
+:bs	jmp dispatch ; 
+:lf	lda #$0a
+	jmp dispatch
+
+
+:table
+	dw pf1	; 1
+	dw pf2	; 2
+	dw pf3	; 3
+	dw pf4	; 4
+
 
 
 keypad

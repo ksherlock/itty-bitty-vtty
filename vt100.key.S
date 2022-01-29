@@ -59,6 +59,7 @@ keypress ent
 
 :ctrl
 	lda key
+	and #$1f ; control-space should generate 0, not $20.
 	bra :send
 
 :notctrl
@@ -199,6 +200,7 @@ digit
 	lda #'?'
 	jsr dispatch
 	lda key
+	ora #$40
 	jmp dispatch
 
 

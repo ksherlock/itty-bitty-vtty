@@ -308,7 +308,7 @@ draw_char_raw ent
 	jsr recalc_cursor
 	pla
 	sta [cursor_base] ; offset 0
-	rts
+	jmp advance_x
 
 :scroll
 	pha ; save
@@ -317,7 +317,7 @@ draw_char_raw ent
 	jsr recalc_cursor_x
 	pla
 	sta [cursor_base] ; offset 0
-	rts	
+	jmp advance_x
 
 
 * erase screen commands are not affected by origin or scrolling region.

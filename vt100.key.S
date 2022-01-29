@@ -23,6 +23,27 @@ kmUpdateMod	equ %0010_0000
 kmOption	equ %0100_0000
 kmCommand	equ %1000_0000
 
+
+*
+* The vt100 has a delete key and a backspace key.
+* delete sends 0x7f.  backspace sends 0x08.
+* stty is general set so 0x7f is the erase character.
+* termcaps generally claim 0x08 is the backspace character.
+*
+* emacs, by default, thinks 0x08 ( ^H ) means you want help.
+*
+* so, backspace will send 0x7f.  control-H or command-backspace
+* will send 0x08. 
+
+*
+* TODO - keys
+* command-L -> local/online mode?
+* command-Q -> quit
+* command-K -> clear screen?
+* command-R -> reset settings
+*
+
+
 dispatch
 	jmp write_modem
 
@@ -72,9 +93,9 @@ keypress ent
 	bra :send
 
 :notctrl
-	cmp #$7f ; delete - special case 
-	bne :send
-	lda #$08
+*	cmp #$7f ; delete - special case 
+*	bne :send
+*	lda #$08
 :send	jmp dispatch
 
 command ; or option
@@ -105,7 +126,8 @@ command ; or option
 :MIN	equ 49
 :MAX	equ 52
 
-:bs	jmp dispatch ; 
+:bs	lda #$08
+	jmp dispatch ; 
 :lf	lda #$0a
 	jmp dispatch
 
@@ -119,18 +141,27 @@ command ; or option
 
 
 keypad
-* todo - keypad enters honors LNM?
 
 	lda key
 	cmp #:MIN
 	blt :rts
 	cmp #:MAX+1
-	bcs :rts
+	bcs :other
 	sec
 	sbc #:MIN
 	asl
 	tax
 	jmp (:table,x)
+
+:other
+
+* keypad delete key ($75 aka 'u') will send as backspace ($08)
+*
+	cmp #'u'
+	bne :rts
+	lda #$08
+	jmp dispatch
+	
 
 :rts	rts
 
@@ -169,7 +200,7 @@ keypad
 	dw pf4		; *
 	dw comma	; +
 	dw :rts		; ,
-	dw dash	; -
+	dw dash		; -
 	dw dot		; .
 	dw pf3		; / PF3 -> ESC R
 	dw digit	; 0
@@ -182,9 +213,9 @@ keypad
 	dw digit	; 7
 	dw digit	; 8
 	dw digit	; 9
-	dw $0		; :
-	dw $0		; ;
-	dw $0		; <
+	dw :rts		; :
+	dw :rts		; ;
+	dw :rts		; <
 	dw pf2		; = PF2 -> ESC Q
 
 

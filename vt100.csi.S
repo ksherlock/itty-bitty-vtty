@@ -18,7 +18,7 @@
 	ext erase_screen_0,erase_screen_1,erase_screen_2
 	ext update_sgr
 
-	ext write_modem
+	ext write_modem,write_modem_str
 
 
 vt100_csi ent
@@ -262,7 +262,7 @@ vt100_csi_2 ent
 	dw :rts		; u
 	dw :rts		; v
 	dw :rts		; w
-	dw :rts		; x
+	dw csi_x	; x
 	dw csi_y	; y
 
 :modifier
@@ -832,23 +832,45 @@ write_digit
 :table	db 0,10,20,30,40,50,60,70,80
 
 csi_c  ; what are you?
-	lda #ESC
-	jsr write_modem
-	lda #'['
-	jsr write_modem
-	lda #'?'
-	jsr write_modem
-	lda #'1'
-	jsr write_modem
-	lda #'?'
-	jsr write_modem
-	lda #'0'
-	jsr write_modem
-	lda #'c'
-	jmp write_modem
+* DA - Device Attributes
+
+	mx %11
+
+	php
+	rep #$10 ; long x/y
+	ldy #:response
+	jsr write_modem_str
+	plp
+	rts
+
+:response asc 1b,'[?1;0c',00 ; No options.
 
 csi_y  ; invoke confidence test
 * ??? 
 	rts
+
+
+
+csi_x ; request terminal parameters
+* DECREQTPARM – Request Terminal Parameters
+
+	mx %11
+
+	lda parms
+	cmp #2
+	bcs :rts
+	inc
+	inc
+	ora #'0'
+	sta :response+2
+
+	php
+	rep #$10 ; long x/y
+	ldy #:response
+	jsr write_modem_str
+	plp
+:rts	rts
+
+:response asc 1b,'[x;1;1;112;112;1;0x',00 ; no parity, 8-bits, 9600/9600, 16x multiplier, no stp flags.
 
 	sav vt100.csi.L

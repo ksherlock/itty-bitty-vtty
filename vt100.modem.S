@@ -163,6 +163,11 @@ modem_int
 * doesn't access direct page.
 
 * check/clear overrun?
+
+*
+* n.b. - vt100 would drop $00 and $7f characters here - I drop them later.
+*
+
 	mx %11
 
 	phb
@@ -242,6 +247,13 @@ modem_io ent
 	beq :nope
 	lda read_buffer,x
 	inc read_q_tail
+
+* $00 and $7f dropped here.
+	and #$7f
+	beq :read 
+	cmp #$7f
+	beq :read
+
 	plp
 	sec
 	rts

@@ -16,6 +16,7 @@
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
 	ext erase_line_0,erase_line_1,erase_line_2
 	ext erase_screen_0,erase_screen_1,erase_screen_2
+	ext update_sgr
 
 	ext write_modem
 
@@ -472,15 +473,8 @@ csi_m
 	cpx pcount
 	blt :loop
 
-* now update - bit 7 indicates inverse.
-	stz draw_inverse
-	lda SGR
-	beq :rts
-	lda #$80
-*	and #$80
-	sta draw_inverse
+	jmp update_sgr
 
-:rts	rts
 
 
 :and	db $00,$ff,$ff,$ff,$ff,$ff,$ff,$ff

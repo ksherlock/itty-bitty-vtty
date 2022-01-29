@@ -83,6 +83,7 @@ mod		ds 2
 saved_x	ds 2
 saved_y	ds 2
 saved_decom ds 2
+saved_sgr ds 2
 
 
 * async read/write pointers.

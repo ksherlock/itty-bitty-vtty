@@ -12,6 +12,7 @@
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
 	ext scroll_up,scroll_down
 	ext reset
+	ext update_sgr
 
 vt100_esc ent
 * #[()=>cH78DEM
@@ -141,6 +142,8 @@ esc_7 ; save cursor position, graphic rendition, and character set.
 	sta saved_y
 	lda DECOM
 	sta saved_decom
+	lda SGR
+	sta saved_sgr
 
 	rts
 esc_8 ; restore cursor position, graphic rendition, and character set.
@@ -151,7 +154,10 @@ esc_8 ; restore cursor position, graphic rendition, and character set.
 	sta y
 	lda saved_decom
 	sta DECOM
+	lda saved_sgr
+	sta SGR
 
+	jsr update_sgr
 	jmp recalc_cursor
 
 esc_eq ; enter alternate keypad mode

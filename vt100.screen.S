@@ -21,6 +21,17 @@
 * cursor_state - $80 = disabled, $40 = on
 
 
+update_sgr ent
+
+	stz draw_inverse
+	lda SGR
+	beq :rts
+	lda #$80
+	sta draw_inverse
+
+:rts	rts
+
+
 
 text
 	dw $0400

@@ -106,7 +106,8 @@ init
 	sta DECBM
 	lda #$80
 *	sta LOCAL
-	sta DECANM
+	sta DECANM ; ANSI (vt100) on
+	sta DECARM ; key repeat on
 
 *	lda #st_vt52
 	lda #st_vt100

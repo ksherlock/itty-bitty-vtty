@@ -30,13 +30,22 @@ keypress ent
 	debug keypress
 	lda KBD
 	bmi :key
-	rts
+:rts	rts
 :key
 	and #$7f
 	sta key
 	lda KEYMOD
 	sta mod
 	sta KEYSTROBE
+
+* if DECARM is clear, skip repeat characters.
+	bit DECARM
+	bpl :arm
+	bit #kmRepeat
+	bne :rts
+:arm
+
+
 	bit #kmOption!kmCommand
 	bne command
 

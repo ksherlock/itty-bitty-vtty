@@ -284,6 +284,7 @@ variables
 	jsr decawm
 	jsr decarm
 	jsr decscnm
+	jsr deccolm
 	jsr lnm
 	jsr sgr
 	jsr dectm
@@ -384,9 +385,20 @@ decscnm
 :str	asc "DECSCNM: ",00
 
 
-lnm
+deccolm
 	mx %10
 	ldy #line_12+4
+	ldx #:str
+	jsr print_xy_str
+	lda DPAGE+DECCOLM
+	jmp print_on_off
+
+:str	asc "DECCOLM: ",00
+
+
+lnm
+	mx %10
+	ldy #line_13+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+LNM
@@ -397,7 +409,7 @@ lnm
 
 sgr
 	mx %10
-	ldy #line_13+4
+	ldy #line_14+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+SGR
@@ -408,7 +420,7 @@ sgr
 
 dectm
 	mx %10
-	ldy #line_14+4
+	ldy #line_15+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECTM
@@ -419,7 +431,7 @@ dectm
 
 decbm
 	mx %10
-	ldy #line_15+4
+	ldy #line_16+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+DECBM
@@ -431,7 +443,7 @@ decbm
 
 decx
 	mx %10
-	ldy #line_16+4
+	ldy #line_17+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+x
@@ -443,7 +455,7 @@ decx
 
 decy
 	mx %10
-	ldy #line_17+4
+	ldy #line_18+4
 	ldx #:str
 	jsr print_xy_str
 	lda DPAGE+y

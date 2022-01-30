@@ -354,7 +354,7 @@ mode_common
 	dw :rts ; error
 	dw mode_DECCKM
 	dw mode_DECANM
-	dw :rts ; DECCOLM
+	dw mode_DECCOLM ; DECCOLM
 	dw :rts ; DECSCLM
 	dw mode_DECSCNM
 	dw mode_DECOM
@@ -396,10 +396,33 @@ mode_DECANM
 :rts	rts
 
 
-*mode_DECCOLM
-*	sty DECCOLM
-*	rts
+mode_DECCOLM
+* 80/132 mode.
+* vt102 guide states:
+* NOTE: When you change the number of columns per line, the screen is erased. 
+* This also sets the scrolling region for full screen (24 lines).
+*
+* based on testing, this always clears the screen and resets x/y, regardless of current mode.
+*
 
+	bit pmod
+	bpl :rts
+
+	sty DECCOLM
+
+	lda #0
+	sta DECTM
+	lda #23
+	sta DECBM
+	stz x
+	stz y
+
+	phy
+	jsr recalc_cursor
+	jsr erase_screen_2
+	ply
+
+:rts	rts
 
 mode_DECSCNM
 	bit pmod

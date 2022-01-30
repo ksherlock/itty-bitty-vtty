@@ -36,6 +36,7 @@ DECOM	ds 2 ; origin
 DECSCNM ds 2 ; screen mode
 DECAWM	ds 2 ; wrap
 DECARM	ds 2 ; auto repeat
+DECCOLM ds 2 ; character per line (80/132)
 
 
 LNM	ds 2 ; new line
@@ -46,7 +47,6 @@ SGR	ds 2 ; graphics, bit 1 = bold, 4 = underscore, 5 = blink, 7 = inverse
 *CHARSET	ds 2 ; 
 *GRAPHICS	ds 2 ; 
 
-*DECCOLM ds 2 ; character per line (80/132)
 *DECINLM ds 2 ; interlace
 *DECSCLM ds 2 ; scroll mode
 

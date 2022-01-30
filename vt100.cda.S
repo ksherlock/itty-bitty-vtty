@@ -37,8 +37,20 @@ ptr	ds 2
 init_cda ent
 	php
 	rep #$30
+
+*
+* rom 1 IIgs InstallCDA clobbers $3c-$43 on the direct page
+*
+
+	phd
+	pea #0
+	pld
+
 	psl #handle
 	_InstallCDA
+
+	pld
+
 	plp
 	rts
 

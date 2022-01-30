@@ -4,6 +4,8 @@
 	xc
 	xc
 
+	tbx on ; qasm
+
 	mx %11
 	use vt.equ
 	use apple2gs.equ
@@ -62,6 +64,9 @@ init
 	sta SETALTCHAR
 	rep #$30
 
+	jsr init_mem
+
+
 	ldx #254
 :zloop	stz 0,x
 	dex
@@ -119,6 +124,60 @@ init
 	jsr init_audio
 	jsr init_cda
 	rts
+
+init_mem
+*
+* see prodos technote #27
+*
+* _InstallCDA uses the memory manager ; otherwise I wouldn't bother
+* This is here to prevent MM from stomping on our memory.
+*
+
+	mx %00
+
+	stz master_id
+	_TLStartUp
+	pha
+	_MMStartUp
+	pla
+	bcs :p8
+	rts
+:p8
+	_MTStartUp
+	pea #0
+	pea #$1000
+	_GetNewID
+	pla
+	sta master_id
+
+* bank 0
+	pha
+	pha
+	pea #$0000
+	pea #$b800
+	pei master_id
+	pea #$c013
+	pea #0000
+	pea #0800
+	_NewHandle
+	pla
+	pla
+
+* bank 1
+	pha
+	pha
+	pea #$0000
+	pea #$b800
+	pei master_id
+	pea #$c013
+	pea #$0001
+	pea #$0800
+	_NewHandle
+	pla
+	pla
+
+	rts
+
 
 reset	ent
 	mx %11

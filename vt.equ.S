@@ -93,6 +93,8 @@ read_q_tail	ds 2
 write_q_head	ds 2
 write_q_tail	ds 2
 
+master_id	ds 2
+
 	do *>256
 	err "too big"
 	fin

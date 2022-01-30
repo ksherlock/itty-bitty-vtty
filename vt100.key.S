@@ -60,6 +60,9 @@ keypress ent
 	sta KEYSTROBE
 
 * if DECARM is clear, skip repeat characters.
+*
+* a REAL vt100 will never auto-repeat ESC, TAB, RETURN, or if Control is also pressed. 
+*
 	bit DECARM
 	bpl :arm
 	bit #kmRepeat

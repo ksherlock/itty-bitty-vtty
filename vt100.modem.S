@@ -31,6 +31,7 @@ SerFlag		equ $e10104 ;
 * see IIgs TN #18 - Do-It-Yourself SCC Access
 
 init_modem ent
+enable_modem ent
 *	sep #$30
 
 	php
@@ -88,6 +89,28 @@ init_modem ent
 	db 1,%0_0_0_10_0_0_0 ; interrupts on rx or special condition
 	db 9,%00_0_0_1_0_1_0 ; master interrupts enabled.
 	db -1,-1
+
+
+disable_modem ent
+* local mode
+	mx %11
+	php
+	sei
+
+	lda SCCBREG ; sync access
+	lda #9
+	sta SCCBREG
+	lda #%01_0_1_0_0_0_1 ; reset channel B.
+	sta SCCBREG
+
+	stz read_q_head
+	stz read_q_tail
+	stz write_q_head
+	stz write_q_tail
+
+	plp
+	rts
+
 
 write_modem_sync ent
 	mx %11

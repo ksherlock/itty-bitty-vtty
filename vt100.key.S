@@ -112,6 +112,10 @@ command ; or option
 	beq :bs
 	cmp #$0d
 	beq :lf
+	cmp #'l'
+	beq :local
+	cmp #'L'
+	beq :local
 
 	cmp #:MIN
 	blt :rts
@@ -126,13 +130,26 @@ command ; or option
 :rts	rts
 
 
-:MIN	equ 49
-:MAX	equ 52
-
 :bs	lda #$08
 	jmp dispatch ; 
 :lf	lda #$0a
 	jmp dispatch
+
+	ext enable_modem,disable_modem
+:local
+	bit LOCAL
+	bmi :online
+	lda #$80
+	sta LOCAL
+	jmp disable_modem
+
+:online
+	stz LOCAL
+	jmp enable_modem
+
+
+:MIN	equ 49
+:MAX	equ 52
 
 
 :table

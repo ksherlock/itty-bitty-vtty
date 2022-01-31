@@ -224,7 +224,8 @@ reset	ent
 	lda #23
 	sta DECBM
 	lda #$80
-	sta DECANM
+	sta DECANM ; ansi mode
+	sta DECARM ; key repeat on
 
 	lda #st_vt100
 	sta state

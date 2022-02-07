@@ -30,7 +30,7 @@ SerFlag		equ $e10104 ;
 *
 * see IIgs TN #18 - Do-It-Yourself SCC Access
 
-init_modem ent
+modem_startup ent
 enable_modem ent
 *	sep #$30
 
@@ -107,6 +107,27 @@ disable_modem ent
 	stz read_q_tail
 	stz write_q_head
 	stz write_q_tail
+
+	plp
+	rts
+
+
+modem_shutdown	ent
+
+	mx %11
+	php
+	sei
+
+	lda SCCBREG ; sync access
+	lda #9
+	sta SCCBREG
+	lda #%01_0_1_0_0_0_1 ; reset channel B.
+	sta SCCBREG
+
+
+	lda >SerFlag
+	and #%11_111_000 ; channel B interrupts.
+	sta >SerFlag
 
 	plp
 	rts

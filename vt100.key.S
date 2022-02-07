@@ -4,6 +4,8 @@
 	xc
 	xc
 
+	tbx on
+
 	use vt.equ
 	use apple2gs.equ
 	use debug
@@ -74,7 +76,7 @@ keypress ent
 	bne command
 
 	bit #kmKeypad
-	bne keypad
+	jne keypad
 	bit #kmControl
 	bne :ctrl
 
@@ -112,11 +114,15 @@ command ; or option
 	beq :bs
 	cmp #$0d
 	beq :lf
-	cmp #'l'
-	beq :local
-	cmp #'L'
-	beq :local
 
+	cmp #'a'
+	bcc :0
+	cmp #'z'+1
+	bcs :0
+
+	and #$df ; ~ $20
+
+:0
 	cmp #:MIN
 	blt :rts
 	cmp #:MAX+1
@@ -147,16 +153,58 @@ command ; or option
 	stz LOCAL
 	jmp enable_modem
 
+:quit
+	ext quit
+	jmp quit
+	rts
+
+:reset
+* TODO
+	rts
+
+:clear
+* TODO
+	rts
+
 
 :MIN	equ 49
-:MAX	equ 52
-
+:MAX	equ 82
 
 :table
-	dw pf1	; 1
-	dw pf2	; 2
-	dw pf3	; 3
-	dw pf4	; 4
+	dw pf1		; 1
+	dw pf2		; 2
+	dw pf3		; 3
+	dw pf4		; 4
+	dw :rts		; 5
+	dw :rts		; 6
+	dw :rts		; 7
+	dw :rts		; 8
+	dw :rts		; 9
+	dw :rts		; :
+	dw :rts		; ;
+	dw :rts		; <
+	dw :rts		; =
+	dw :rts		; >
+	dw :rts		; ?
+	dw :rts		; @
+	dw :rts		; A
+	dw :rts		; B
+	dw :rts		; C
+	dw :rts		; D
+	dw :rts		; E
+	dw :rts		; F
+	dw :rts		; G
+	dw :rts		; H
+	dw :rts		; I
+	dw :rts		; J
+	dw :clear	; K
+	dw :local	; L
+	dw :rts		; M
+	dw :rts		; N
+	dw :rts		; O
+	dw :rts		; P
+	dw :quit	; Q
+	dw :reset	; R
 
 
 

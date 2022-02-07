@@ -34,9 +34,18 @@ ptr	ds 2
 	dend
 
 
-init_cda ent
+*
+* rom 0/1 doesn't include _RemoveCDA in ROM so it can't be removed.
+* additionally, _InstallCDA has bugs.
+* so, for now, disable on ROM 1.
+
+cda_startup ent
 	php
 	rep #$30
+
+	jsr $fe1f ; idroutine.  y = rom
+	cpy #3
+	bcc :nope
 
 *
 * rom 1 IIgs InstallCDA clobbers $3c-$43 on the direct page
@@ -51,8 +60,30 @@ init_cda ent
 
 	pld
 
+:nope
 	plp
 	rts
+
+cda_shutdown ent
+	mx %00
+
+	jsr $fe1f ; idroutine.  y = rom
+	cpy #3
+	bcc :nope
+
+	phd
+	pea #0
+	pld
+
+
+	psl #handle
+	_RemoveCDA
+
+	pld
+
+:nope
+	rts
+
 
 handle	adrl Header ; can use a fake handle for now, until we need to _RemoveCDA
 Header
@@ -101,9 +132,11 @@ main
 
 
 :keyloop
+	sep #$30
 	lda KBD
 	bpl :keyloop
 	sta KEYSTROBE
+	rep #$30
 
 	and #$7f
 

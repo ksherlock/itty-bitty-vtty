@@ -13,13 +13,14 @@
 
 	ext scroll_down
 	ext recalc_cursor,recalc_cursor_x,recalc_cursor_y
-	ext modem_io,init_modem,modem_vector,reset_modem_buffer
+	ext modem_io,modem_vector,reset_modem_buffer
+	ext modem_startup,modem_shutdown
 	ext keypress
 	ext disable_cursor,enable_cursor,cursor_vector
 	ext erase_screen,fill_screen
 	ext init_tabs
 	ext init_audio
-	ext init_cda
+	ext cda_startup,cda_shutdown
 
 main	debug main
 
@@ -119,12 +120,14 @@ init
 	sta state
 
 *	jsr erase_screen
-	jsr init_modem
+	jsr modem_startup
 	jsr init_tabs
 	jsr init_audio
-	jsr init_cda
+	jsr cda_startup
 	rts
 
+
+MasterID	dw 0
 init_mem
 *
 * see prodos technote #27
@@ -135,7 +138,7 @@ init_mem
 
 	mx %00
 
-	stz master_id
+	stz MasterID
 	_TLStartUp
 	pha
 	_MMStartUp
@@ -148,14 +151,15 @@ init_mem
 	pea #$1000
 	_GetNewID
 	pla
-	sta master_id
+	sta MasterID
 
 * bank 0
 	pha
 	pha
 	pea #$0000
 	pea #$b800
-	pei master_id
+	lda MasterID
+	pha
 	pea #$c013
 	pea #0000
 	pea #0800
@@ -168,7 +172,8 @@ init_mem
 	pha
 	pea #$0000
 	pea #$b800
-	pei master_id
+	lda MasterID
+	pha
 	pea #$c013
 	pea #$0001
 	pea #$0800
@@ -241,6 +246,50 @@ reset	ent
 
 	plp
 	rts
+
+
+quit	ent
+
+* need to disable modem interrupts
+
+
+	sep #$30
+	lda #4
+	trb VGCINT ; disable 1-sec interrupt.
+	stz SCANINT ; reset 1-sec interrupt
+
+	jsr modem_shutdown
+
+	rep #$30
+
+	jsr cda_shutdown
+
+	lda MasterID
+	beq :e
+
+	pha
+	pha
+	_DisposeAll
+	_DeleteID
+
+:e
+	pea #0
+	pld
+
+	sec
+	xce
+	mx %00
+	inc $3f4 ; invalidate power-up bit 
+	jsr $bf00
+	db $65
+	dw :parms
+	brk $ea
+
+:parms	db 4
+	db 0
+	dw 0
+	db 0
+	dw 0
 
 
 *dispatch ent

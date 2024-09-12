@@ -355,7 +355,7 @@ mode_common
 	dw mode_DECCKM
 	dw mode_DECANM
 	dw mode_DECCOLM ; DECCOLM
-	dw :rts ; DECSCLM
+	dw mode_4 ; DECSCLM
 	dw mode_DECSCNM
 	dw mode_DECOM
 	dw mode_DECAWM
@@ -363,7 +363,7 @@ mode_common
 	dw :rts ; DECINLM
 	dw :rts ; 10
 	dw :rts ; 11
-	dw :rts ; 12
+	dw mode_12 ; 12
 	dw :rts ; 13
 	dw :rts ; 14
 	dw :rts ; 15
@@ -417,6 +417,7 @@ mode_DECCOLM
 	stz x
 	stz y
 
+* TODO - does this also reset the origin mode?
 	phy
 	jsr recalc_cursor
 	jsr erase_screen_2
@@ -424,11 +425,40 @@ mode_DECCOLM
 
 :rts	rts
 
+
+mode_4
+* ? 4 = DECSCLM
+* 4 = IRM (vt102)
+	do BUILD=102
+
+	bit pmod
+	bmi :rts
+:irm
+	sty IRM
+
+	fin
+
+:rts	rts
+
+
+mode_12
+* ? 12 = unused
+* 12 = SRM (vt102)
+	do BUILD=102
+	bit pmod
+	bmi :rts
+	sty SRM
+	fin
+
+:rts	rts
+
+
+
 mode_DECSCNM
 	bit pmod
 	bpl :rts
 
-* todo - invert on-screen characters?
+* todo - invert on-screen characters? swap foreground/background colors in control panel?
 	sty DECSCNM
 :rts	rts
 
@@ -866,7 +896,12 @@ csi_c  ; what are you?
 	plp
 	rts
 
+	do BUILD=100
 :response asc 1b,'[?1;0c',00 ; No options.
+	fin
+	do BUILD=102
+:response asc 1b,'[?1;6c',00 ; No options.
+	fin
 
 csi_y  ; invoke confidence test
 * ??? 

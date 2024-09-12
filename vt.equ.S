@@ -1,6 +1,7 @@
 
 	cas se
 
+BUILD	equ 100 ; 52, 100, 102
 
 st_vt52		equ 0
 st_vt52_esc	equ 2
@@ -41,6 +42,12 @@ DECCOLM ds 2 ; character per line (80/132)
 
 LNM	ds 2 ; new line
 SGR	ds 2 ; graphics, bit 1 = bold, 4 = underscore, 5 = blink, 7 = inverse
+
+
+	do BUILD=102
+SRM	ds 2 ; local echo aka send-receive mode
+IRM	ds 2 ; insertion-replacement mode
+	fin
 
 * not supported
 

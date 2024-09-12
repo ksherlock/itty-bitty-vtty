@@ -66,7 +66,7 @@ keypress ent
 * a REAL vt100 will never auto-repeat ESC, TAB, RETURN, or if Control is also pressed. 
 *
 	bit DECARM
-	bpl :arm
+	bmi :arm
 	bit #kmRepeat
 	bne :rts
 :arm
